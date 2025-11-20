@@ -1,4 +1,4 @@
-package com.kation.mt.toolWindow.mws.vo;
+package com.augustlee.mt.toolWindow.mws.vo;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

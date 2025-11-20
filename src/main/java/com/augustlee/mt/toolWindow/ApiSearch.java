@@ -1,4 +1,4 @@
-package com.kation.mt.toolWindow;
+package com.augustlee.mt.toolWindow;
 
 import com.alibaba.fastjson.JSON;
 import com.intellij.codeInsight.navigation.NavigationUtil;
@@ -11,23 +11,19 @@ import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.ui.components.JBScrollPane;
-import com.kation.mt.toolWindow.mws.SearchCacheManager;
-import com.kation.mt.toolWindow.mws.dto.ClassIndexDTO;
-import com.kation.mt.toolWindow.tool.ApiPathState;
-import com.kation.mt.toolWindow.tool.CookieInputState;
+import com.augustlee.mt.toolWindow.mws.SearchManager;
+import com.augustlee.mt.toolWindow.mws.dto.ClassIndexDTO;
+import com.augustlee.mt.toolWindow.tool.CookieInputState;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 
-public class ApiCacheSearch {
-
-    private static final String CACHE_SIZE = "Cache size: ";
+public class ApiSearch {
 
     private final JPanel MAIN_PANEL = new JPanel();
 
-    private final JLabel CACHE_SIZE_LABEL = new JLabel(CACHE_SIZE + "0");
-    private final JButton REFRESH_BUTTON = new JButton("Refresh");
+    private final JLabel COOKIE_LABEL = new JLabel("Cookie：");
     private final JTextArea COOKIE_TEXT_AREA = new JTextArea(8, 30);
 
     private final JLabel API_LABEL = new JLabel("API：");
@@ -35,19 +31,16 @@ public class ApiCacheSearch {
 
     private final JButton SEARCH_BUTTON = new JButton("Search");
 
-    private final SearchCacheManager SEARCH_CACHE_MANAGER;
+    private final SearchManager SEARCH_MANAGER = new SearchManager();
 
     private Project project;
     private CookieInputState cookieState;
 
-    public ApiCacheSearch(Project project, CookieInputState cookieState, ApiPathState apiPathState){
-        this.SEARCH_CACHE_MANAGER = new SearchCacheManager(apiPathState);
+    public ApiSearch(Project project, CookieInputState cookieState){
         this.project = project;
         this.cookieState = cookieState;
         this.initLayout();
         this.initComponent();
-
-        this.CACHE_SIZE_LABEL.setText(CACHE_SIZE + this.SEARCH_CACHE_MANAGER.getApiCount());
     }
 
     public JPanel getMainJPanel(){
@@ -55,55 +48,48 @@ public class ApiCacheSearch {
     }
 
 
-    private void initLayout() {
+    private void initLayout(){
+        // 创建"查找API"选项卡面板
         MAIN_PANEL.setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // 左侧容器
-        JPanel leftColumn = new JPanel();
-        leftColumn.setLayout(new BoxLayout(leftColumn, BoxLayout.Y_AXIS));
-        leftColumn.add(Box.createVerticalStrut(5));
-        leftColumn.add(CACHE_SIZE_LABEL);
-        leftColumn.add(Box.createVerticalStrut(5));
-        leftColumn.add(REFRESH_BUTTON);
-
-        // 添加左侧容器（设置weighty为0防止垂直扩展）
+        // 第一行：Cookie标签和多行文本框
         gbc.gridx = 0;
         gbc.gridy = 0;
-        gbc.weightx = 0.2;
-        gbc.weighty = 0; // 新增
-        MAIN_PANEL.add(leftColumn, gbc);
+        gbc.weightx = 0.0;
+        gbc.weighty = 0.0;
+        gbc.anchor = GridBagConstraints.NORTHWEST;
+        MAIN_PANEL.add(COOKIE_LABEL, gbc);
 
-        // Cookie文本区域（设置weighty为0）
-        JBScrollPane cookieScrollPane = new JBScrollPane(COOKIE_TEXT_AREA);
         gbc.gridx = 1;
-        gbc.weighty = 0; // 新增
-        gbc.fill = GridBagConstraints.BOTH;
-        MAIN_PANEL.add(cookieScrollPane, gbc);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        gbc.gridheight = 1;
+        JScrollPane scrollPane = new JBScrollPane(COOKIE_TEXT_AREA);
+        MAIN_PANEL.add(scrollPane, gbc);
 
-        // API标签和输入框（设置weighty为0）
+        // 第二行：API标签和普通文本框
         gbc.gridx = 0;
         gbc.gridy = 1;
-        gbc.weighty = 0; // 新增
+        gbc.weightx = 0.0;
         MAIN_PANEL.add(API_LABEL, gbc);
 
         gbc.gridx = 1;
         MAIN_PANEL.add(API_TEXT_FIELD, gbc);
 
-        // 搜索按钮（设置weighty为0）
+        // 第三行：搜索按钮
         gbc.gridx = 0;
         gbc.gridy = 2;
         gbc.gridwidth = 2;
-        gbc.weighty = 0; // 新增
+        gbc.anchor = GridBagConstraints.CENTER;
         MAIN_PANEL.add(SEARCH_BUTTON, gbc);
 
-        // 添加底部占位符将内容推至顶部
+        // 添加垂直填充组件
         gbc.gridy = 3;
-        gbc.weighty = 1; // 占据剩余垂直空间
-        MAIN_PANEL.add(Box.createGlue(), gbc);
+        gbc.weighty = 1.0;  // 占用剩余垂直空间
+        gbc.fill = GridBagConstraints.VERTICAL;
+        MAIN_PANEL.add(Box.createVerticalGlue(), gbc);
     }
 
     private void initComponent(){
@@ -120,35 +106,17 @@ public class ApiCacheSearch {
         this.COOKIE_TEXT_AREA.setLineWrap(true);
         this.COOKIE_TEXT_AREA.setText(cookieState.getCookieContent());
 
-        this.SEARCH_BUTTON.addActionListener(this::searchApi);
-        this.REFRESH_BUTTON.addActionListener(this::refresh);
-    }
 
-    private void refresh(ActionEvent actionEvent) {
-        try{
-            this.SEARCH_BUTTON.setEnabled(false);
-            this.REFRESH_BUTTON.setEnabled(false);
-            this.SEARCH_CACHE_MANAGER.refresh();
-            this.CACHE_SIZE_LABEL.setText(CACHE_SIZE + this.SEARCH_CACHE_MANAGER.getApiCount());
-        } catch (Exception e) {
-            Messages.showErrorDialog(project, e.getMessage(), "Refresh Failed");
-            e.printStackTrace();
-        } finally {
-            this.SEARCH_BUTTON.setEnabled(true);
-            this.REFRESH_BUTTON.setEnabled(true);
-        }
+        this.SEARCH_BUTTON.addActionListener(this::searchApi);
 
     }
 
     private void searchApi(ActionEvent actionEvent) {
         String path = this.API_TEXT_FIELD.getText();
+
         try{
             path = path.trim();
-            ClassIndexDTO classIndexDTO = this.SEARCH_CACHE_MANAGER.getClassIndex(path);
-            if(classIndexDTO == null){
-                Messages.showErrorDialog(project, "API not found: " + path, "Error");
-                return;
-            }
+            ClassIndexDTO classIndexDTO = this.SEARCH_MANAGER.getClassIndex(path);
             System.out.println(JSON.toJSONString(classIndexDTO));
             goToCode(classIndexDTO.getServiceName(), classIndexDTO.getMethodName(), project);
         } catch (Exception e) {

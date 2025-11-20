@@ -1,10 +1,10 @@
-package com.kation.mt.toolWindow.mws;
+package com.augustlee.mt.toolWindow.mws;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.kation.mt.toolWindow.tool.Config;
-import com.kation.mt.toolWindow.tool.CurlToOkHttp;
+import com.augustlee.mt.toolWindow.tool.Config;
+import com.augustlee.mt.toolWindow.tool.CurlToOkHttp;
 
 import java.io.IOException;
 

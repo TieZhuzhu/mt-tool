@@ -5,8 +5,8 @@ plugins {
     id("com.github.johnrengelman.shadow") version "8.1.1" // 添加shadow插件
 }
 
-group = "com.kation"
-version = "1.0-SNAPSHOT"
+group = "com.augustlee"
+version = "1.0.1-SNAPSHOT"
 
 repositories {
     mavenCentral()

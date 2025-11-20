@@ -1,4 +1,4 @@
-package com.kation.mt.toolWindow;
+package com.augustlee.mt.toolWindow;
 
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.DumbAware;
@@ -8,8 +8,8 @@ import com.intellij.openapi.wm.ToolWindowFactory;
 import com.intellij.ui.components.JBTabbedPane;
 import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentFactory;
-import com.kation.mt.toolWindow.tool.ApiPathState;
-import com.kation.mt.toolWindow.tool.CookieInputState;
+import com.augustlee.mt.toolWindow.tool.ApiPathState;
+import com.augustlee.mt.toolWindow.tool.CookieInputState;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;

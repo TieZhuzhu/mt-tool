@@ -1,4 +1,4 @@
-package com.kation.mt.toolWindow.tool;
+package com.augustlee.mt.toolWindow.tool;
 
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.State;

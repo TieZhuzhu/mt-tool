@@ -1,11 +1,11 @@
-package com.kation.mt.toolWindow.mws;
+package com.augustlee.mt.toolWindow.mws;
 
 
-import com.kation.mt.toolWindow.mws.dto.ClassIndexDTO;
-import com.kation.mt.toolWindow.mws.enums.GroupEnum;
-import com.kation.mt.toolWindow.mws.po.ApiDetailPO;
-import com.kation.mt.toolWindow.mws.vo.ApiDetailVO;
-import com.kation.mt.toolWindow.mws.vo.ApiVO;
+import com.augustlee.mt.toolWindow.mws.dto.ClassIndexDTO;
+import com.augustlee.mt.toolWindow.mws.enums.GroupEnum;
+import com.augustlee.mt.toolWindow.mws.po.ApiDetailPO;
+import com.augustlee.mt.toolWindow.mws.vo.ApiDetailVO;
+import com.augustlee.mt.toolWindow.mws.vo.ApiVO;
 
 import java.util.*;
 

@@ -1,10 +1,11 @@
-package com.kation.mt.toolWindow.mws.vo;
+package com.augustlee.mt.toolWindow.mws.vo;
+
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
-public class ApiDetailVO {
+public class ApiVO {
 
 
     @JsonProperty("allowMultiHttpParamValues")
@@ -21,18 +22,18 @@ public class ApiDetailVO {
     private Long createTime;
     @JsonProperty("createUserName")
     private String createUserName;
-    @JsonProperty("customErrors")
-    private List<?> customErrors;
     @JsonProperty("degradation")
     private String degradation;
     @JsonProperty("description")
     private String description;
-    @JsonProperty("domain")
-    private String domain;
+    @JsonProperty("errorMatchType")
+    private String errorMatchType;
     @JsonProperty("expressType")
     private Integer expressType;
     @JsonProperty("failure")
     private String failure;
+    @JsonProperty("grayRule")
+    private String grayRule;
     @JsonProperty("headerMap")
     private String headerMap;
     @JsonProperty("httpType")
@@ -57,10 +58,6 @@ public class ApiDetailVO {
     private String name;
     @JsonProperty("path")
     private String path;
-    @JsonProperty("port")
-    private Integer port;
-    @JsonProperty("preParameters")
-    private List<?> preParameters;
     @JsonProperty("prestatus")
     private Integer prestatus;
     @JsonProperty("redirect")
@@ -71,10 +68,6 @@ public class ApiDetailVO {
     private String response;
     @JsonProperty("responseCase")
     private String responseCase;
-    @JsonProperty("responseCookies")
-    private List<?> responseCookies;
-    @JsonProperty("responseHeaders")
-    private List<?> responseHeaders;
     @JsonProperty("rhinoConfigSyncStatus")
     private Integer rhinoConfigSyncStatus;
     @JsonProperty("serviceName")
@@ -148,14 +141,6 @@ public class ApiDetailVO {
         this.createUserName = createUserName;
     }
 
-    public List<?> getCustomErrors() {
-        return customErrors;
-    }
-
-    public void setCustomErrors(List<?> customErrors) {
-        this.customErrors = customErrors;
-    }
-
     public String getDegradation() {
         return degradation;
     }
@@ -172,12 +157,12 @@ public class ApiDetailVO {
         this.description = description;
     }
 
-    public String getDomain() {
-        return domain;
+    public String getErrorMatchType() {
+        return errorMatchType;
     }
 
-    public void setDomain(String domain) {
-        this.domain = domain;
+    public void setErrorMatchType(String errorMatchType) {
+        this.errorMatchType = errorMatchType;
     }
 
     public Integer getExpressType() {
@@ -194,6 +179,14 @@ public class ApiDetailVO {
 
     public void setFailure(String failure) {
         this.failure = failure;
+    }
+
+    public String getGrayRule() {
+        return grayRule;
+    }
+
+    public void setGrayRule(String grayRule) {
+        this.grayRule = grayRule;
     }
 
     public String getHeaderMap() {
@@ -292,22 +285,6 @@ public class ApiDetailVO {
         this.path = path;
     }
 
-    public Integer getPort() {
-        return port;
-    }
-
-    public void setPort(Integer port) {
-        this.port = port;
-    }
-
-    public List<?> getPreParameters() {
-        return preParameters;
-    }
-
-    public void setPreParameters(List<?> preParameters) {
-        this.preParameters = preParameters;
-    }
-
     public Integer getPrestatus() {
         return prestatus;
     }
@@ -346,22 +323,6 @@ public class ApiDetailVO {
 
     public void setResponseCase(String responseCase) {
         this.responseCase = responseCase;
-    }
-
-    public List<?> getResponseCookies() {
-        return responseCookies;
-    }
-
-    public void setResponseCookies(List<?> responseCookies) {
-        this.responseCookies = responseCookies;
-    }
-
-    public List<?> getResponseHeaders() {
-        return responseHeaders;
-    }
-
-    public void setResponseHeaders(List<?> responseHeaders) {
-        this.responseHeaders = responseHeaders;
     }
 
     public Integer getRhinoConfigSyncStatus() {
@@ -433,32 +394,10 @@ public class ApiDetailVO {
         private String alias;
         @JsonProperty("appkey")
         private String appkey;
-        @JsonProperty("forExpression")
-        private String forExpression;
-        @JsonProperty("framework")
-        private String framework;
         @JsonProperty("ignoreException")
         private Boolean ignoreException;
-        @JsonProperty("inputs")
-        private List<InputsDTO> inputs;
         @JsonProperty("loadBalance")
         private String loadBalance;
-        @JsonProperty("methodName")
-        private String methodName;
-        @JsonProperty("pirateExtendParam")
-        private Object pirateExtendParam;
-        @JsonProperty("serviceName")
-        private String serviceName;
-        @JsonProperty("switchExpression")
-        private String switchExpression;
-        @JsonProperty("switchExpressionType")
-        private String switchExpressionType;
-        @JsonProperty("timeout")
-        private Integer timeout;
-        @JsonProperty("transparent")
-        private Boolean transparent;
-        @JsonProperty("transparentMethod")
-        private Boolean transparentMethod;
         @JsonProperty("type")
         private String type;
         @JsonProperty("useConditionalRoute")
@@ -480,22 +419,6 @@ public class ApiDetailVO {
             this.appkey = appkey;
         }
 
-        public String getForExpression() {
-            return forExpression;
-        }
-
-        public void setForExpression(String forExpression) {
-            this.forExpression = forExpression;
-        }
-
-        public String getFramework() {
-            return framework;
-        }
-
-        public void setFramework(String framework) {
-            this.framework = framework;
-        }
-
         public Boolean getIgnoreException() {
             return ignoreException;
         }
@@ -504,84 +427,12 @@ public class ApiDetailVO {
             this.ignoreException = ignoreException;
         }
 
-        public List<InputsDTO> getInputs() {
-            return inputs;
-        }
-
-        public void setInputs(List<InputsDTO> inputs) {
-            this.inputs = inputs;
-        }
-
         public String getLoadBalance() {
             return loadBalance;
         }
 
         public void setLoadBalance(String loadBalance) {
             this.loadBalance = loadBalance;
-        }
-
-        public String getMethodName() {
-            return methodName;
-        }
-
-        public void setMethodName(String methodName) {
-            this.methodName = methodName;
-        }
-
-        public Object getPirateExtendParam() {
-            return pirateExtendParam;
-        }
-
-        public void setPirateExtendParam(Object pirateExtendParam) {
-            this.pirateExtendParam = pirateExtendParam;
-        }
-
-        public String getServiceName() {
-            return serviceName;
-        }
-
-        public void setServiceName(String serviceName) {
-            this.serviceName = serviceName;
-        }
-
-        public String getSwitchExpression() {
-            return switchExpression;
-        }
-
-        public void setSwitchExpression(String switchExpression) {
-            this.switchExpression = switchExpression;
-        }
-
-        public String getSwitchExpressionType() {
-            return switchExpressionType;
-        }
-
-        public void setSwitchExpressionType(String switchExpressionType) {
-            this.switchExpressionType = switchExpressionType;
-        }
-
-        public Integer getTimeout() {
-            return timeout;
-        }
-
-        public void setTimeout(Integer timeout) {
-            this.timeout = timeout;
-        }
-
-        public Boolean getTransparent() {
-            return transparent;
-        }
-
-        public void setTransparent(Boolean transparent) {
-            this.transparent = transparent;
-        }
-
-        public Boolean getTransparentMethod() {
-            return transparentMethod;
-        }
-
-        public void setTransparentMethod(Boolean transparentMethod) {
-            this.transparentMethod = transparentMethod;
         }
 
         public String getType() {
@@ -598,69 +449,6 @@ public class ApiDetailVO {
 
         public void setUseConditionalRoute(Boolean useConditionalRoute) {
             this.useConditionalRoute = useConditionalRoute;
-        }
-
-        public static class InputsDTO {
-            @JsonProperty("defaultValue")
-            private String defaultValue;
-            @JsonProperty("expressType")
-            private Integer expressType;
-            @JsonProperty("mode")
-            private Integer mode;
-            @JsonProperty("paramKey")
-            private String paramKey;
-            @JsonProperty("type")
-            private String type;
-            @JsonProperty("value")
-            private String value;
-
-            public String getDefaultValue() {
-                return defaultValue;
-            }
-
-            public void setDefaultValue(String defaultValue) {
-                this.defaultValue = defaultValue;
-            }
-
-            public Integer getExpressType() {
-                return expressType;
-            }
-
-            public void setExpressType(Integer expressType) {
-                this.expressType = expressType;
-            }
-
-            public Integer getMode() {
-                return mode;
-            }
-
-            public void setMode(Integer mode) {
-                this.mode = mode;
-            }
-
-            public String getParamKey() {
-                return paramKey;
-            }
-
-            public void setParamKey(String paramKey) {
-                this.paramKey = paramKey;
-            }
-
-            public String getType() {
-                return type;
-            }
-
-            public void setType(String type) {
-                this.type = type;
-            }
-
-            public String getValue() {
-                return value;
-            }
-
-            public void setValue(String value) {
-                this.value = value;
-            }
         }
     }
 }

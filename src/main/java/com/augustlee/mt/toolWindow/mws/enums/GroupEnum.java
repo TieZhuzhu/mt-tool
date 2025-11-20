@@ -1,4 +1,4 @@
-package com.kation.mt.toolWindow.mws.enums;
+package com.augustlee.mt.toolWindow.mws.enums;
 
 import java.util.Arrays;
 import java.util.List;

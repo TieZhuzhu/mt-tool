@@ -1,7 +1,7 @@
-package com.kation.mt.toolWindow.mws;
+package com.augustlee.mt.toolWindow.mws;
 
 import com.alibaba.fastjson.JSONArray;
-import com.kation.mt.toolWindow.mws.vo.ApiVO;
+import com.augustlee.mt.toolWindow.mws.vo.ApiVO;
 
 import java.util.List;
 import java.util.Random;

@@ -1,4 +1,4 @@
-package com.kation.mt.toolWindow.mws;
+package com.augustlee.mt.toolWindow.mws;
 
 
 public abstract class AbsCatchCurlCommand<RESP> extends AbsCurlCommand<RESP>{

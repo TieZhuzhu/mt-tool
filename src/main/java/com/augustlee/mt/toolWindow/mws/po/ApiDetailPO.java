@@ -1,4 +1,4 @@
-package com.kation.mt.toolWindow.mws.po;
+package com.augustlee.mt.toolWindow.mws.po;
 
 import java.util.Objects;
 

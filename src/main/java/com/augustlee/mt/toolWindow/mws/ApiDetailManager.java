@@ -1,8 +1,8 @@
-package com.kation.mt.toolWindow.mws;
+package com.augustlee.mt.toolWindow.mws;
 
 import com.alibaba.fastjson.JSONObject;
-import com.kation.mt.toolWindow.mws.po.ApiDetailPO;
-import com.kation.mt.toolWindow.mws.vo.ApiDetailVO;
+import com.augustlee.mt.toolWindow.mws.po.ApiDetailPO;
+import com.augustlee.mt.toolWindow.mws.vo.ApiDetailVO;
 
 import java.util.Random;
 

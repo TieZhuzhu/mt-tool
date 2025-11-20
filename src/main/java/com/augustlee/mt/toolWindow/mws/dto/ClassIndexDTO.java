@@ -1,4 +1,4 @@
-package com.kation.mt.toolWindow.mws.dto;
+package com.augustlee.mt.toolWindow.mws.dto;
 
 public class ClassIndexDTO {
 
