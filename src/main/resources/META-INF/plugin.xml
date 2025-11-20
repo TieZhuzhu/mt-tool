@@ -8,7 +8,7 @@
     <name>Mt-tool</name>
 
     <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
-    <vendor email="wccwin@163.com" url="https://www.kation.com">hishop</vendor>
+    <vendor email="l836268029@gmail.com" url="https://www.augustlee.cn">August Lee</vendor>
 
     <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
          Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
@@ -31,7 +31,7 @@
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow id="美团工具集"
+        <toolWindow id="美团工具集11"
                     secondary="true"
                     icon="AllIcons.Toolwindows.ToolWindowAnt"
                     anchor="right"
