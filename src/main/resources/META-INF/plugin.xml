@@ -1,0 +1,45 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
+    <id>com.kation.mttool</id>
+
+    <!-- Public plugin name should be written in Title Case.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
+    <name>Mt-tool</name>
+
+    <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
+    <vendor email="wccwin@163.com" url="https://www.kation.com">hishop</vendor>
+
+    <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
+         Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
+    <description><![CDATA[
+    <h3>美团开发者工具集</h3>
+    <p>提供美团相关开发工具的集成功能，包括：</p>
+    <ul>
+        <li>API查找工具</li>
+    </ul>
+    <p>提高美团生态开发效率</p>
+  ]]></description>
+
+    <idea-version since-build="231" until-build="241.*"/>
+
+    <!-- Product and plugin compatibility requirements.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+    <depends>com.intellij.modules.java</depends>
+
+    <!-- Extension points defined by the plugin.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+    <extensions defaultExtensionNs="com.intellij">
+        <toolWindow id="美团工具集"
+                    secondary="true"
+                    icon="AllIcons.Toolwindows.ToolWindowAnt"
+                    anchor="right"
+                    factoryClass="com.kation.mt.toolWindow.CalendarToolWindowFactory"/>
+        <applicationService serviceImplementation="com.kation.mt.toolWindow.tool.CookieInputState"/>
+        <applicationService serviceImplementation="com.kation.mt.toolWindow.tool.ApiPathState"/>
+
+    </extensions>
+
+
+</idea-plugin>
