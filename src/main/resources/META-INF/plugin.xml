@@ -31,7 +31,7 @@
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow id="美团工具集11"
+        <toolWindow id="美团工具集"
                     secondary="true"
                     icon="AllIcons.Toolwindows.ToolWindowAnt"
                     anchor="right"
