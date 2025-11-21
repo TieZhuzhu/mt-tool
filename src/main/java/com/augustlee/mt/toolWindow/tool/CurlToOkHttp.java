@@ -69,6 +69,24 @@ public class CurlToOkHttp {
                         request.password = creds[1];
                     }
                     break;
+                case "-b":
+                case "--cookie":
+                    // 支持 -b 参数传递 Cookie
+                    if (i + 1 < tokens.length) {
+                        String cookieValue = tokens[++i];
+                        // 清理 Cookie 值：去除引号和换行符
+                        if (cookieValue != null && !cookieValue.isEmpty()) {
+                            // 去除首尾引号（如果有）
+                            if ((cookieValue.startsWith("\"") && cookieValue.endsWith("\"")) ||
+                                (cookieValue.startsWith("'") && cookieValue.endsWith("'"))) {
+                                cookieValue = cookieValue.substring(1, cookieValue.length() - 1);
+                            }
+                            // 去除换行符和多余空格
+                            cookieValue = cookieValue.replaceAll("\\s+", " ").trim();
+                            request.cookie = cookieValue;
+                        }
+                    }
+                    break;
                 case "-k":
                 case "--insecure":
                     request.insecure = true;
@@ -149,9 +167,20 @@ public class CurlToOkHttp {
     private static Request buildRequest(CurlRequest curlRequest) {
         Request.Builder builder = new Request.Builder().url(curlRequest.url);
 
-        // 添加请求头
+        // 添加请求头（但排除 Cookie，因为 Cookie 会通过 -b 参数单独处理）
         for (Map.Entry<String, String> entry : curlRequest.headers.entrySet()) {
-            builder.addHeader(entry.getKey(), entry.getValue());
+            // 跳过 Cookie header，避免重复添加
+            if (!"Cookie".equalsIgnoreCase(entry.getKey())) {
+                builder.addHeader(entry.getKey(), entry.getValue());
+            }
+        }
+
+        // 处理 Cookie（优先使用 -b 参数，如果没有则使用 Header 中的 Cookie）
+        if (curlRequest.cookie != null && !curlRequest.cookie.isEmpty()) {
+            builder.addHeader("Cookie", curlRequest.cookie);
+        } else if (curlRequest.headers.containsKey("Cookie")) {
+            // 如果 -b 参数没有 Cookie，但 Header 中有，则使用 Header 中的
+            builder.addHeader("Cookie", curlRequest.headers.get("Cookie"));
         }
 
         // 基本认证
@@ -179,6 +208,7 @@ public class CurlToOkHttp {
         String body;
         String username;
         String password;
+        String cookie;
         boolean insecure;
         Map<String, String> headers = new HashMap<>();
     }

@@ -31,13 +31,14 @@
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow id="美团工具集"
+        <toolWindow id="美团工具集(HiShop专用)"
                     secondary="true"
                     icon="AllIcons.Toolwindows.ToolWindowAnt"
                     anchor="right"
                     factoryClass="com.augustlee.mt.toolWindow.CalendarToolWindowFactory"/>
         <applicationService serviceImplementation="com.augustlee.mt.toolWindow.tool.CookieInputState"/>
         <applicationService serviceImplementation="com.augustlee.mt.toolWindow.tool.ApiPathState"/>
+        <applicationService serviceImplementation="com.augustlee.mt.toolWindow.code.art.cache.MavenVersionCacheState"/>
 
     </extensions>
 

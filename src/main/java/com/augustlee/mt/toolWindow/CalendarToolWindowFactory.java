@@ -48,6 +48,9 @@ final class CalendarToolWindowFactory implements ToolWindowFactory, DumbAware {
             ApiSearch apiSearch = new ApiSearch(project, cookieState);
             tabbedPane.addTab("API Search", apiSearch.getMainJPanel());
 
+            ApiMavenSearch apiMavenSearch = new ApiMavenSearch(project, cookieState);
+            tabbedPane.addTab("API Maven Search", apiMavenSearch.getMainJPanel());
+
 
 
 //            contentPanel.setLayout(new BorderLayout(0, 20));
