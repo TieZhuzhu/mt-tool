@@ -10,6 +10,7 @@ import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentFactory;
 import com.augustlee.mt.toolWindow.tool.ApiPathState;
 import com.augustlee.mt.toolWindow.tool.CookieInputState;
+import com.augustlee.mt.toolWindow.otherdevtools.OtherDevToolsPanel;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -50,6 +51,9 @@ final class CalendarToolWindowFactory implements ToolWindowFactory, DumbAware {
 
             ApiMavenSearch apiMavenSearch = new ApiMavenSearch(project, cookieState);
             tabbedPane.addTab("API Maven Search", apiMavenSearch.getMainJPanel());
+
+            OtherDevToolsPanel otherDevToolsPanel = new OtherDevToolsPanel(project);
+            tabbedPane.addTab("Other Dev Tools", otherDevToolsPanel.getMainPanel());
 
 
 
