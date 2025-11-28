@@ -1,6 +1,13 @@
-package com.augustlee.mt.toolWindow.mws;
+package com.augustlee.mt.toolWindow.common.command;
 
-
+/**
+ * 带缓存的 Curl 命令执行抽象类
+ * 继承自 AbsCurlCommand，提供响应缓存功能
+ *
+ * @see AbsCatchCurlCommand
+ * @author August Lee
+ * @since 2025/11/28 10:09
+ */
 public abstract class AbsCatchCurlCommand<RESP> extends AbsCurlCommand<RESP>{
 
     protected RESP cache = null;
@@ -20,3 +27,4 @@ public abstract class AbsCatchCurlCommand<RESP> extends AbsCurlCommand<RESP>{
 
 
 }
+

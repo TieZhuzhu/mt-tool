@@ -1,11 +1,20 @@
-package com.augustlee.mt.toolWindow.mws;
+package com.augustlee.mt.toolWindow.mws.manager;
 
 import com.alibaba.fastjson.JSONArray;
+import com.augustlee.mt.toolWindow.common.command.AbsCatchCurlCommand;
 import com.augustlee.mt.toolWindow.mws.vo.ApiVO;
 
 import java.util.List;
 import java.util.Random;
 
+/**
+ * API 管理器
+ * 负责管理 API 列表的获取
+ *
+ * @see ApiManager
+ * @author August Lee
+ * @since 2025/11/28 10:09
+ */
 public class ApiManager extends AbsCatchCurlCommand<List<ApiVO>> {
 
     private static final String CURL_TEMP = "curl 'https://shepherd.mws-test.sankuai.com/spapi/v1/apis/{{GROUP_ID}}' \\\n" +
@@ -50,3 +59,4 @@ public class ApiManager extends AbsCatchCurlCommand<List<ApiVO>> {
         return 1000 * 60 * 60;
     }
 }
+

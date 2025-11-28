@@ -1,4 +1,4 @@
-package com.augustlee.mt.toolWindow.tool;
+package com.augustlee.mt.toolWindow.common.util;
 
 import okhttp3.*;
 
@@ -15,7 +15,14 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-
+/**
+ * Curl 命令转 OkHttp 请求工具类
+ * 支持将 curl 命令转换为 OkHttp 请求并执行
+ *
+ * @see CurlToOkHttp
+ * @author August Lee
+ * @since 2025/11/28 10:09
+ */
 public class CurlToOkHttp {
 
     /**
@@ -468,3 +475,4 @@ public class CurlToOkHttp {
         Map<String, String> headers = new HashMap<>();
     }
 }
+

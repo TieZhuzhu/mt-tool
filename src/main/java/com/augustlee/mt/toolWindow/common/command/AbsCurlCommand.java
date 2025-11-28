@@ -1,13 +1,21 @@
-package com.augustlee.mt.toolWindow.mws;
+package com.augustlee.mt.toolWindow.common.command;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.augustlee.mt.toolWindow.tool.Config;
-import com.augustlee.mt.toolWindow.tool.CurlToOkHttp;
+import com.augustlee.mt.toolWindow.common.util.Config;
+import com.augustlee.mt.toolWindow.common.util.CurlToOkHttp;
 
 import java.io.IOException;
 
+/**
+ * Curl 命令执行抽象基类
+ * 提供执行 curl 命令的通用功能，包括响应解析
+ *
+ * @see AbsCurlCommand
+ * @author August Lee
+ * @since 2025/11/28 10:09
+ */
 public abstract class AbsCurlCommand<RESP> {
 
 
@@ -43,3 +51,4 @@ public abstract class AbsCurlCommand<RESP> {
 
 
 }
+

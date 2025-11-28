@@ -1,16 +1,25 @@
-package com.augustlee.mt.toolWindow.mws;
-
+package com.augustlee.mt.toolWindow.mws.service;
 
 import com.alibaba.fastjson.JSON;
+import com.augustlee.mt.toolWindow.common.state.ApiPathState;
 import com.augustlee.mt.toolWindow.mws.dto.ApiIndexDTO;
 import com.augustlee.mt.toolWindow.mws.dto.ClassIndexDTO;
 import com.augustlee.mt.toolWindow.mws.enums.GroupEnum;
+import com.augustlee.mt.toolWindow.mws.manager.ApiDetailManager;
+import com.augustlee.mt.toolWindow.mws.manager.ApiManager;
 import com.augustlee.mt.toolWindow.mws.po.ApiDetailPO;
 import com.augustlee.mt.toolWindow.mws.vo.ApiDetailVO;
-import com.augustlee.mt.toolWindow.tool.ApiPathState;
 
 import java.util.*;
 
+/**
+ * API 缓存搜索服务
+ * 提供带缓存功能的 API 搜索服务
+ *
+ * @see SearchCacheManager
+ * @author August Lee
+ * @since 2025/11/28 10:09
+ */
 public class SearchCacheManager {
 
     private final Map<Integer, ApiManager> API_MANAGER_MAP = new HashMap<>();
@@ -66,9 +75,15 @@ public class SearchCacheManager {
 
 
 
-
     private void init(){
-        List<ApiIndexDTO> list = JSON.parseArray(apiPathState.getApiPathJson(), ApiIndexDTO.class);
+        if (apiPathState == null) {
+            return;
+        }
+        String apiPathJson = apiPathState.getApiPathJson();
+        if (apiPathJson == null || apiPathJson.isEmpty()) {
+            return;
+        }
+        List<ApiIndexDTO> list = JSON.parseArray(apiPathJson, ApiIndexDTO.class);
         this.refreshClassIndex(list);
     }
 
@@ -105,5 +120,5 @@ public class SearchCacheManager {
 
 
 
-
 }
+

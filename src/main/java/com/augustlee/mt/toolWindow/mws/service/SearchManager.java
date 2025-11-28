@@ -1,14 +1,23 @@
-package com.augustlee.mt.toolWindow.mws;
-
+package com.augustlee.mt.toolWindow.mws.service;
 
 import com.augustlee.mt.toolWindow.mws.dto.ClassIndexDTO;
 import com.augustlee.mt.toolWindow.mws.enums.GroupEnum;
+import com.augustlee.mt.toolWindow.mws.manager.ApiDetailManager;
+import com.augustlee.mt.toolWindow.mws.manager.ApiManager;
 import com.augustlee.mt.toolWindow.mws.po.ApiDetailPO;
 import com.augustlee.mt.toolWindow.mws.vo.ApiDetailVO;
 import com.augustlee.mt.toolWindow.mws.vo.ApiVO;
 
 import java.util.*;
 
+/**
+ * API 搜索服务
+ * 提供 API 搜索的高级业务功能
+ *
+ * @see SearchManager
+ * @author August Lee
+ * @since 2025/11/28 10:09
+ */
 public class SearchManager {
 
     private final Map<Integer, ApiManager> API_MANAGER_MAP = new HashMap<>();
@@ -65,3 +74,4 @@ public class SearchManager {
     }
 
 }
+

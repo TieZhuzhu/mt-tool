@@ -1,4 +1,4 @@
-package com.augustlee.mt.toolWindow;
+package com.augustlee.mt.toolWindow.mws.panel;
 
 import com.alibaba.fastjson.JSON;
 import com.intellij.codeInsight.navigation.NavigationUtil;
@@ -11,15 +11,22 @@ import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.ui.components.JBScrollPane;
-import com.augustlee.mt.toolWindow.mws.SearchManager;
+import com.augustlee.mt.toolWindow.common.state.CookieInputState;
+import com.augustlee.mt.toolWindow.mws.service.SearchManager;
 import com.augustlee.mt.toolWindow.mws.dto.ClassIndexDTO;
-import com.augustlee.mt.toolWindow.tool.CookieInputState;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 
-public class ApiSearch {
+/**
+ * API 搜索面板
+ *
+ * @see ApiSearchPanel
+ * @author August Lee
+ * @since 2025/11/28 10:09
+ */
+public class ApiSearchPanel {
 
     private final JPanel MAIN_PANEL = new JPanel();
 
@@ -36,7 +43,7 @@ public class ApiSearch {
     private Project project;
     private CookieInputState cookieState;
 
-    public ApiSearch(Project project, CookieInputState cookieState){
+    public ApiSearchPanel(Project project, CookieInputState cookieState){
         this.project = project;
         this.cookieState = cookieState;
         this.initLayout();
@@ -104,7 +111,9 @@ public class ApiSearch {
             }
         });
         this.COOKIE_TEXT_AREA.setLineWrap(true);
-        this.COOKIE_TEXT_AREA.setText(cookieState.getCookieContent());
+        if (cookieState != null) {
+            this.COOKIE_TEXT_AREA.setText(cookieState.getCookieContent());
+        }
 
 
         this.SEARCH_BUTTON.addActionListener(this::searchApi);
@@ -164,8 +173,5 @@ public class ApiSearch {
         });
         }
 
-
-
-
-
 }
+

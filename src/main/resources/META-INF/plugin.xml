@@ -36,8 +36,8 @@
                     icon="AllIcons.Toolwindows.ToolWindowAnt"
                     anchor="right"
                     factoryClass="com.augustlee.mt.toolWindow.CalendarToolWindowFactory"/>
-        <applicationService serviceImplementation="com.augustlee.mt.toolWindow.tool.CookieInputState"/>
-        <applicationService serviceImplementation="com.augustlee.mt.toolWindow.tool.ApiPathState"/>
+        <applicationService serviceImplementation="com.augustlee.mt.toolWindow.common.state.CookieInputState"/>
+        <applicationService serviceImplementation="com.augustlee.mt.toolWindow.common.state.ApiPathState"/>
         <applicationService serviceImplementation="com.augustlee.mt.toolWindow.code.art.cache.MavenVersionCacheState"/>
 
     </extensions>

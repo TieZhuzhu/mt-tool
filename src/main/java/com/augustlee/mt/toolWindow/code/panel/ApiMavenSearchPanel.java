@@ -1,4 +1,4 @@
-package com.augustlee.mt.toolWindow;
+package com.augustlee.mt.toolWindow.code.panel;
 
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
@@ -12,7 +12,7 @@ import com.augustlee.mt.toolWindow.code.art.enums.ComponentNameEnum;
 import com.augustlee.mt.toolWindow.code.art.vo.MavenVersionVO;
 import com.augustlee.mt.toolWindow.code.art.vo.MavenVersionDataVO;
 import com.augustlee.mt.toolWindow.code.art.vo.MavenVersionItemVO;
-import com.augustlee.mt.toolWindow.tool.CookieInputState;
+import com.augustlee.mt.toolWindow.common.state.CookieInputState;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -27,13 +27,13 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 /**
- * Maven组件版本搜索工具
+ * Maven组件版本搜索工具面板
  *
- * @see ApiMavenSearch
+ * @see ApiMavenSearchPanel
  * @author August Lee
- * @since 2025/11/20 17:14
+ * @since 2025/11/28 10:09
  */
-public class ApiMavenSearch {
+public class ApiMavenSearchPanel {
 
     private final JPanel MAIN_PANEL = new JPanel();
 
@@ -64,16 +64,20 @@ public class ApiMavenSearch {
     private Project project;
     private CookieInputState cookieState;
     private final MavenVersionCacheManager cacheManager = new MavenVersionCacheManager();
+
     // 保存原始信息文本
     private String originalInfoText = "";
+
     // 用于恢复信息标签的定时器
     private Timer restoreTimer;
+
     // 保存原始响应JSON
     private String rawResponseJson = "";
+
     // 当前显示模式：true=可视化（表格），false=原始信息（JSON）
     private boolean isVisualizationMode = true;
 
-    public ApiMavenSearch(Project project, CookieInputState cookieState) {
+    public ApiMavenSearchPanel(Project project, CookieInputState cookieState) {
         this.project = project;
         this.cookieState = cookieState;
         this.initLayout();
@@ -344,8 +348,10 @@ public class ApiMavenSearch {
             }
         });
         this.COOKIE_TEXT_AREA.setLineWrap(true);
-        String savedCookie = cookieState.getCookieContent();
-        this.COOKIE_TEXT_AREA.setText(savedCookie);
+        if (cookieState != null) {
+            String savedCookie = cookieState.getCookieContent();
+            this.COOKIE_TEXT_AREA.setText(savedCookie);
+        }
 
         // 初始化组件名称下拉框
         setupComponentNameComboBox();
@@ -405,7 +411,6 @@ public class ApiMavenSearch {
         RESULT_TABLE.setRowHeight(25);
         RESULT_TABLE.setShowGrid(true);
         RESULT_TABLE.setGridColor(JBColor.LIGHT_GRAY);
-        // RESULT_TABLE.setFillsViewportHeight(true);
 
         // 设置列宽
         // Version
