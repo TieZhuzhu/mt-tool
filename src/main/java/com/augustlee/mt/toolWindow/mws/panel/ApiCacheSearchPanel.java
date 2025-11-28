@@ -1,8 +1,15 @@
 package com.augustlee.mt.toolWindow.mws.panel;
 
 import com.alibaba.fastjson.JSON;
+import com.augustlee.mt.toolWindow.common.state.ApiPathState;
+import com.augustlee.mt.toolWindow.common.state.CookieInputState;
+import com.augustlee.mt.toolWindow.mws.dto.ClassIndexDTO;
+import com.augustlee.mt.toolWindow.mws.service.SearchCacheManager;
 import com.intellij.codeInsight.navigation.NavigationUtil;
 import com.intellij.openapi.application.ApplicationManager;
+import com.augustlee.mt.toolWindow.common.log.ConsoleLogger;
+import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
@@ -11,10 +18,7 @@ import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.ui.components.JBScrollPane;
-import com.augustlee.mt.toolWindow.common.state.ApiPathState;
-import com.augustlee.mt.toolWindow.common.state.CookieInputState;
-import com.augustlee.mt.toolWindow.mws.service.SearchCacheManager;
-import com.augustlee.mt.toolWindow.mws.dto.ClassIndexDTO;
+import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import java.awt.*;
@@ -28,6 +32,8 @@ import java.awt.event.ActionEvent;
  * @since 2025/11/28 10:09
  */
 public class ApiCacheSearchPanel {
+
+    private static final ConsoleLogger LOG = ConsoleLogger.getInstance(ApiCacheSearchPanel.class);
 
     private static final String CACHE_SIZE = "Cache size: ";
 
@@ -134,31 +140,93 @@ public class ApiCacheSearchPanel {
     }
 
     private void refresh(ActionEvent actionEvent) {
-        try{
-            this.SEARCH_BUTTON.setEnabled(false);
-            this.REFRESH_BUTTON.setEnabled(false);
-            this.SEARCH_CACHE_MANAGER.refresh();
-            this.CACHE_SIZE_LABEL.setText(CACHE_SIZE + this.SEARCH_CACHE_MANAGER.getApiCount());
-        } catch (Exception e) {
-            Messages.showErrorDialog(project, e.getMessage(), "Refresh Failed");
-            e.printStackTrace();
-        } finally {
-            this.SEARCH_BUTTON.setEnabled(true);
-            this.REFRESH_BUTTON.setEnabled(true);
+        LOG.info("=== Refresh 按钮被点击 ===");
+
+        if (project == null) {
+            LOG.error("project 为 null，无法执行刷新操作");
+            Messages.showErrorDialog((Project) null, "Project 未初始化，无法刷新", "Error");
+            return;
         }
 
+        this.SEARCH_BUTTON.setEnabled(false);
+        this.REFRESH_BUTTON.setEnabled(false);
+
+        LOG.info("创建后台任务，project: " + project.getName());
+        long refreshStartTime = System.currentTimeMillis();
+        new Task.Backgroundable(project, "Refreshing API Cache", true) {
+            @Override
+            public void run(@NotNull ProgressIndicator indicator) {
+                LOG.info("=== 后台任务开始执行 ===");
+                indicator.setIndeterminate(true);
+                indicator.setText("Refreshing API cache...");
+                try {
+                    LOG.info("调用 SEARCH_CACHE_MANAGER.refresh()...");
+                    SEARCH_CACHE_MANAGER.refresh();
+                    LOG.info("SEARCH_CACHE_MANAGER.refresh() 执行完成");
+                    
+                    long refreshEndTime = System.currentTimeMillis();
+                    long duration = refreshEndTime - refreshStartTime;
+                    int apiCount = SEARCH_CACHE_MANAGER.getApiCount();
+                    
+                    ApplicationManager.getApplication().invokeLater(() -> {
+                        LOG.info("更新 UI，缓存大小: " + apiCount);
+                        CACHE_SIZE_LABEL.setText(CACHE_SIZE + apiCount);
+                        SEARCH_BUTTON.setEnabled(true);
+                        REFRESH_BUTTON.setEnabled(true);
+                        
+                        // 显示成功提示
+                        String message = String.format(
+                            "API 缓存刷新完成！\n\n" +
+                            "缓存 API 数量：%d 个\n" +
+                            "耗时：%.2f 秒",
+                            apiCount,
+                            duration / 1000.0
+                        );
+                        Messages.showInfoMessage(project, message, "Refresh Success");
+                    });
+                } catch (Exception e) {
+                    LOG.error("刷新 API 缓存时发生错误", e);
+                    ApplicationManager.getApplication().invokeLater(() -> {
+                        Messages.showErrorDialog(project, "刷新失败：" + e.getMessage(), "Refresh Failed");
+                        SEARCH_BUTTON.setEnabled(true);
+                        REFRESH_BUTTON.setEnabled(true);
+                    });
+                }
+            }
+        }.queue();
+        LOG.info("后台任务已提交到队列");
     }
 
     private void searchApi(ActionEvent actionEvent) {
         String path = this.API_TEXT_FIELD.getText();
         try{
             path = path.trim();
-            ClassIndexDTO classIndexDTO = this.SEARCH_CACHE_MANAGER.getClassIndex(path);
-            if(classIndexDTO == null){
-                Messages.showErrorDialog(project, "API not found: " + path, "Error");
+
+            // 输入验证
+            if (path == null || path.isEmpty()) {
+                Messages.showErrorDialog(project, "请输入 API 路径", "Error");
                 return;
             }
-            System.out.println(JSON.toJSONString(classIndexDTO));
+
+            // 检查缓存是否为空
+            int cacheSize = this.SEARCH_CACHE_MANAGER.getApiCount();
+            if (cacheSize == 0) {
+                Messages.showErrorDialog(project,
+                    "API 缓存为空，请先点击 Refresh 按钮刷新缓存",
+                    "Cache Empty");
+                return;
+            }
+
+            ClassIndexDTO classIndexDTO = this.SEARCH_CACHE_MANAGER.getClassIndex(path);
+            if(classIndexDTO == null){
+                Messages.showErrorDialog(project,
+                    "API not found: " + path + "\n\n" +
+                    "当前缓存中有 " + cacheSize + " 个 API。\n" +
+                    "请确认路径是否正确，或点击 Refresh 按钮刷新缓存。",
+                    "API Not Found");
+                return;
+            }
+            LOG.debug("找到 API: " + JSON.toJSONString(classIndexDTO));
             goToCode(classIndexDTO.getServiceName(), classIndexDTO.getMethodName(), project);
         } catch (Exception e) {
             Messages.showErrorDialog(project, e.getMessage(), "Search Failed");

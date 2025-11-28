@@ -1,4 +1,4 @@
-package com.augustlee.mt.toolWindow.common.util;
+package com.augustlee.mt.toolWindow.common.http;
 
 import okhttp3.*;
 
@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,22 @@ public class CurlToOkHttp {
      * 默认读取超时时间（秒）
      */
     private static final int DEFAULT_READ_TIMEOUT_SECONDS = 30;
+
+    /**
+     * 默认写入超时时间（秒）
+     */
+    private static final int DEFAULT_WRITE_TIMEOUT_SECONDS = 30;
+
+    /**
+     * 连接池最大空闲连接数
+     * 增加此值以支持高并发请求
+     */
+    private static final int MAX_IDLE_CONNECTIONS = 100;
+
+    /**
+     * 连接池保持连接的时间（分钟）
+     */
+    private static final long KEEP_ALIVE_DURATION_MINUTES = 5;
 
     /**
      * OkHttpClient 缓存
@@ -109,6 +126,8 @@ public class CurlToOkHttp {
 
     /**
      * 执行 HTTP 请求并返回响应体内容
+     * 
+     * <p>包含重试机制，处理 HTTP/2 连接问题</p>
      *
      * @param curlRequest
      *                    curl 请求对象
@@ -123,16 +142,52 @@ public class CurlToOkHttp {
         // 构建请求
         Request request = buildRequest(curlRequest);
 
-        // 执行请求并处理响应（使用 try-with-resources 确保资源正确关闭）
-        try (Response response = client.newCall(request).execute()) {
-            ResponseBody responseBody = response.body();
-            if (responseBody == null) {
-                return null;
-            }
+        // 重试机制：最多重试 3 次
+        int maxRetries = 3;
+        IOException lastException = null;
+        
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                // 执行请求并处理响应（使用 try-with-resources 确保资源正确关闭）
+                try (Response response = client.newCall(request).execute()) {
+                    ResponseBody responseBody = response.body();
+                    if (responseBody == null) {
+                        return null;
+                    }
 
-            // 返回响应体内容
-            return responseBody.string();
+                    // 返回响应体内容
+                    return responseBody.string();
+                }
+            } catch (IOException e) {
+                lastException = e;
+                
+                // 检查是否是 HTTP/2 连接问题
+                boolean isHttp2Error = e.getMessage() != null && (
+                    e.getMessage().contains("stream was reset") ||
+                    e.getMessage().contains("ConnectionShutdownException") ||
+                    e.getMessage().contains("Connection or outbound has been closed")
+                );
+                
+                // 如果是最后一次尝试，或者不是 HTTP/2 错误，直接抛出异常
+                if (attempt == maxRetries || !isHttp2Error) {
+                    throw e;
+                }
+                
+                // 等待一段时间后重试（指数退避）
+                try {
+                    Thread.sleep(100 * attempt); // 100ms, 200ms, 300ms
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new IOException("请求被中断", ie);
+                }
+            }
         }
+        
+        // 理论上不会到达这里，但为了编译通过
+        if (lastException != null) {
+            throw lastException;
+        }
+        throw new IOException("执行 HTTP 请求失败：未知错误");
     }
 
     private static CurlRequest parseCurl(String curlCommand) {
@@ -301,9 +356,22 @@ public class CurlToOkHttp {
             throw new IllegalArgumentException("读取超时时间必须大于 0，当前值: " + readTimeoutSeconds);
         }
 
+        // 创建连接池，支持高并发请求
+        ConnectionPool connectionPool = new ConnectionPool(MAX_IDLE_CONNECTIONS, KEEP_ALIVE_DURATION_MINUTES, TimeUnit.MINUTES);
+
         OkHttpClient.Builder builder = new OkHttpClient.Builder()
                 .connectTimeout(connectTimeoutSeconds, TimeUnit.SECONDS)
-                .readTimeout(readTimeoutSeconds, TimeUnit.SECONDS);
+                .readTimeout(readTimeoutSeconds, TimeUnit.SECONDS)
+                .writeTimeout(DEFAULT_WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .connectionPool(connectionPool)
+                // 禁用 HTTP/2，强制使用 HTTP/1.1（避免 HTTP/2 连接问题）
+                // HTTP/2 在高并发场景下可能出现连接关闭、流重置等问题
+                .protocols(Arrays.asList(Protocol.HTTP_1_1))
+                // 允许重定向
+                .followRedirects(true)
+                .followSslRedirects(true)
+                // 允许重试失败的请求
+                .retryOnConnectionFailure(true);
 
         if (insecure) {
             // 记录安全警告

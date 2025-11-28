@@ -13,7 +13,13 @@ repositories {
 }
 
 dependencies {
-    implementation("com.squareup.okhttp3:okhttp:4.9.3")
+    implementation("com.squareup.okhttp3:okhttp:4.9.3") {
+        // 排除 Kotlin 标准库，使用 IntelliJ Platform 提供的版本
+        exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib")
+        exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk8")
+        exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk7")
+        exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-common")
+    }
     implementation("com.alibaba:fastjson:2.0.42")
 }
 
@@ -57,6 +63,13 @@ tasks {
 
         // 排除不需要的文件
         exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
+
+        // 排除 Kotlin 标准库，使用 IntelliJ Platform 提供的版本
+        // 这可以避免类加载器冲突（ClassCastException）
+        exclude("kotlin/**")
+        exclude("kotlinx/**")
+        exclude("META-INF/kotlin*")
+        exclude("META-INF/versions/*/kotlin*")
 
         // 指定主类（如果有）
         // manifest {

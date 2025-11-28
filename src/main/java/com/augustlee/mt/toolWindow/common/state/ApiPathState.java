@@ -3,7 +3,7 @@ package com.augustlee.mt.toolWindow.common.state;
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
-import com.augustlee.mt.toolWindow.common.util.Config;
+import com.augustlee.mt.toolWindow.common.state.RuntimeState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,7 +35,7 @@ public class ApiPathState implements PersistentStateComponent<ApiPathState> {
     }
 
     public void setApiPathJson(String apiPathJson) {
-        Config.COOKIE_NAME = apiPathJson;
+        RuntimeState.COOKIE_NAME = apiPathJson;
         this.apiPathJson = apiPathJson;
     }
 }

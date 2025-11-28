@@ -2,7 +2,7 @@ package com.augustlee.mt.toolWindow.code.art;
 
 import com.augustlee.mt.toolWindow.code.art.vo.MavenVersionVO;
 import com.augustlee.mt.toolWindow.common.command.AbsCatchCurlCommand;
-import com.augustlee.mt.toolWindow.common.util.CurlToOkHttp;
+import com.augustlee.mt.toolWindow.common.http.CurlToOkHttp;
 
 import java.io.IOException;
 

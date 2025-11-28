@@ -3,6 +3,7 @@ package com.augustlee.mt.toolWindow.mws.panel;
 import com.alibaba.fastjson.JSON;
 import com.intellij.codeInsight.navigation.NavigationUtil;
 import com.intellij.openapi.application.ApplicationManager;
+import com.augustlee.mt.toolWindow.common.log.ConsoleLogger;
 import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
@@ -27,6 +28,8 @@ import java.awt.event.ActionEvent;
  * @since 2025/11/28 10:09
  */
 public class ApiSearchPanel {
+
+    private static final ConsoleLogger LOG = ConsoleLogger.getInstance(ApiSearchPanel.class);
 
     private final JPanel MAIN_PANEL = new JPanel();
 
@@ -126,7 +129,7 @@ public class ApiSearchPanel {
         try{
             path = path.trim();
             ClassIndexDTO classIndexDTO = this.SEARCH_MANAGER.getClassIndex(path);
-            System.out.println(JSON.toJSONString(classIndexDTO));
+            LOG.debug("找到 API: " + JSON.toJSONString(classIndexDTO));
             goToCode(classIndexDTO.getServiceName(), classIndexDTO.getMethodName(), project);
         } catch (Exception e) {
             Messages.showErrorDialog(project, e.getMessage(), "Search Failed");

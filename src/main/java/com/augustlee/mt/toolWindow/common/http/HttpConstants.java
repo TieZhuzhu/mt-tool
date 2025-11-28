@@ -1,4 +1,4 @@
-package com.augustlee.mt.toolWindow.common.util;
+package com.augustlee.mt.toolWindow.common.http;
 
 /**
  * HTTP 相关常量接口
@@ -30,3 +30,4 @@ public interface HttpConstants {
      */
     String DEFAULT_CONTENT_TYPE = "application/x-www-form-urlencoded";
 }
+

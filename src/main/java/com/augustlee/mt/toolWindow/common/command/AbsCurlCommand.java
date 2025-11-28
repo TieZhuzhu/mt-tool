@@ -3,8 +3,8 @@ package com.augustlee.mt.toolWindow.common.command;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.augustlee.mt.toolWindow.common.util.Config;
-import com.augustlee.mt.toolWindow.common.util.CurlToOkHttp;
+import com.augustlee.mt.toolWindow.common.state.RuntimeState;
+import com.augustlee.mt.toolWindow.common.http.CurlToOkHttp;
 
 import java.io.IOException;
 
@@ -21,7 +21,7 @@ public abstract class AbsCurlCommand<RESP> {
 
     public RESP execute() {
         String curl = this.getCurlCommand();
-        curl += "  -H 'Cookie: "+ Config.COOKIE_NAME +"'";
+        curl += "  -H 'Cookie: "+ RuntimeState.COOKIE_NAME +"'";
         try {
             return this.convertResp(CurlToOkHttp.executeCurl(curl));
         } catch (IOException ex) {

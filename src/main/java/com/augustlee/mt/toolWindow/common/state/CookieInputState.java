@@ -3,7 +3,7 @@ package com.augustlee.mt.toolWindow.common.state;
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
-import com.augustlee.mt.toolWindow.common.util.Config;
+import com.augustlee.mt.toolWindow.common.state.RuntimeState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,9 +28,9 @@ public class CookieInputState implements PersistentStateComponent<CookieInputSta
     @Override
     public void loadState(@NotNull CookieInputState state) {
         this.cookieContent = state.cookieContent;
-        // 同步更新 Config.COOKIE_NAME，确保加载的 Cookie 能够被使用
+        // 同步更新 RuntimeState.COOKIE_NAME，确保加载的 Cookie 能够被使用
         if (this.cookieContent != null && !this.cookieContent.isEmpty()) {
-            Config.COOKIE_NAME = this.cookieContent;
+            RuntimeState.COOKIE_NAME = this.cookieContent;
         }
     }
 
@@ -39,7 +39,7 @@ public class CookieInputState implements PersistentStateComponent<CookieInputSta
     }
 
     public void setCookieContent(String cookieContent) {
-        Config.COOKIE_NAME = cookieContent;
+        RuntimeState.COOKIE_NAME = cookieContent;
         this.cookieContent = cookieContent;
     }
 }
