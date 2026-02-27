@@ -10,6 +10,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -456,12 +458,30 @@ public class MenuPrivilegeConverter {
      * @return 下一行号
      */
     private int addResultRow(JPanel panel, String labelText, String jsonText, GridBagConstraints gbc, int row) {
-        // Label
+        // Label（可点击复制 key）
         gbc.gridx = 0;
         gbc.gridy = row;
         gbc.weightx = 0.0;
         gbc.anchor = GridBagConstraints.WEST;
         JLabel label = new JLabel(labelText + "：");
+        label.setToolTipText("点击复制 " + labelText);
+        label.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        label.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                copyToClipboard(labelText);
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                label.setForeground(new Color(0, 120, 215));
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                label.setForeground(UIManager.getColor("Label.foreground"));
+            }
+        });
         panel.add(label, gbc);
 
         // 文本框和复制按钮的容器
