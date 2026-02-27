@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 public enum GroupEnum {
 
 
+    SGB2B_SEASHOP_SDC_MT_API(64028, "sgb2b_seashop_sdc_mt_api", "/sdc-gw1/mtapi", "闪电帮帮api-主要对接牵牛花"),
     SGB2B_SEASHOP_SDC_OPEN_API(55523, "sgb2b_seashop_sdc_open_api", "/sdc-gw1/openapi", "闪电帮帮开放api"),
     SGB2B_SEASHOP_SDC_SELLER_API(54237, "sgb2b_seashop_sdc_seller_api", "/sdc-gw1/sellerApi", "闪电帮帮卖家端api"),
     SGB2B_SEASHOP_SDC_MALL_API(54236, "sgb2b_seashop_sdc_mall_api", "/sdc-gw1/mallApi", "闪电帮帮买家端api"),

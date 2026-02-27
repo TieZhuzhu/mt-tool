@@ -32,7 +32,7 @@
     <p>提高美团项目生态开发效率</p>
   ]]></description>
 
-    <idea-version since-build="231" until-build="251.*"/>
+    <idea-version since-build="231" until-build="253.*"/>
 
     <!-- Product and plugin compatibility requirements.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
