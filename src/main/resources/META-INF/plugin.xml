@@ -17,15 +17,25 @@
     <h3>美团开发者工具集(HiShop专用)</h3>
     <p>提供美团相关开发工具的集成功能，包括：</p>
     <ul>
-        <li>API查找工具
+        <li>API 查找工具
             <ul>
-                <li>架构重构，优化性能，解决索引慢，强阻塞问题(August Lee)</li>
+                <li>架构重构，优化性能，解决索引慢、强阻塞问题</li>
+                <li>顶部快捷跳转网关地址入口</li>
+                <li>一键获取 Cookie（JS 代码片段 + 剪贴板自动检测，100% 兼容所有 IDEA 版本）</li>
             </ul>
         </li>
-        <li>MAVEN 查找工具(August Lee)</li>
-        <li>Other Dev Tools 其余开发工具(August Lee)
+        <li>MAVEN 查找工具
             <ul>
-                <li>ST菜单转换工具(August Lee)</li>
+                <li>顶部快捷跳转 ART 组件仓库地址入口</li>
+                <li>一键获取 Cookie（与 API 工具共享同一套辅助对话框）</li>
+            </ul>
+        </li>
+        <li>Other Dev Tools 其余开发工具
+            <ul>
+                <li>ST 菜单转换工具：SQL → Lion JSON 批量转换</li>
+                <li>结果键名（如 user.platformPrivilege）点击即复制</li>
+                <li>顶部快捷跳转 Lion 配置中心地址入口</li>
+                <li>优化 SQL 解析兼容性，支持值之间空格不规则的 INSERT 语句</li>
             </ul>
         </li>
     </ul>
