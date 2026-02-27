@@ -7,6 +7,7 @@ import com.augustlee.mt.toolWindow.mws.dto.ClassIndexDTO;
 import com.augustlee.mt.toolWindow.mws.service.SearchCacheManager;
 import com.intellij.codeInsight.navigation.NavigationUtil;
 import com.intellij.openapi.application.ApplicationManager;
+import com.augustlee.mt.toolWindow.common.dialog.CookieHelperDialog;
 import com.augustlee.mt.toolWindow.common.log.ConsoleLogger;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.Task;
@@ -50,6 +51,7 @@ public class ApiCacheSearchPanel {
     private final JTextField API_TEXT_FIELD = new JTextField(30);
 
     private final JButton SEARCH_BUTTON = new JButton("Search");
+    private final JButton GET_COOKIE_BUTTON = new JButton("自动获取Cookie");
 
     private final SearchCacheManager SEARCH_CACHE_MANAGER;
 
@@ -92,6 +94,8 @@ public class ApiCacheSearchPanel {
         leftColumn.setLayout(new BoxLayout(leftColumn, BoxLayout.Y_AXIS));
         leftColumn.add(Box.createVerticalStrut(5));
         leftColumn.add(CACHE_SIZE_LABEL);
+        leftColumn.add(Box.createVerticalStrut(5));
+        leftColumn.add(GET_COOKIE_BUTTON);
         leftColumn.add(Box.createVerticalStrut(5));
         leftColumn.add(REFRESH_BUTTON);
 
@@ -192,6 +196,19 @@ public class ApiCacheSearchPanel {
 
         this.SEARCH_BUTTON.addActionListener(this::searchApi);
         this.REFRESH_BUTTON.addActionListener(this::refresh);
+        this.GET_COOKIE_BUTTON.addActionListener(e -> {
+            CookieHelperDialog dialog = new CookieHelperDialog(
+                    project,
+                    "https://shepherd.mws-test.sankuai.com/api-group-manage",
+                    cookie -> {
+                        COOKIE_TEXT_AREA.setText(cookie);
+                        if (cookieState != null) {
+                            cookieState.setCookieContent(cookie);
+                        }
+                    }
+            );
+            dialog.show();
+        });
     }
 
     private void refresh(ActionEvent actionEvent) {
@@ -218,17 +235,17 @@ public class ApiCacheSearchPanel {
                     LOG.info("调用 SEARCH_CACHE_MANAGER.refresh()...");
                     SEARCH_CACHE_MANAGER.refresh();
                     LOG.info("SEARCH_CACHE_MANAGER.refresh() 执行完成");
-                    
+
                     long refreshEndTime = System.currentTimeMillis();
                     long duration = refreshEndTime - refreshStartTime;
                     int apiCount = SEARCH_CACHE_MANAGER.getApiCount();
-                    
+
                     ApplicationManager.getApplication().invokeLater(() -> {
                         LOG.info("更新 UI，缓存大小: " + apiCount);
                         CACHE_SIZE_LABEL.setText(CACHE_SIZE + apiCount);
                         SEARCH_BUTTON.setEnabled(true);
                         REFRESH_BUTTON.setEnabled(true);
-                        
+
                         // 显示成功提示
                         String message = String.format(
                             "API 缓存刷新完成！\n\n" +

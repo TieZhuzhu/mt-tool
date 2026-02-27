@@ -12,6 +12,7 @@ import com.augustlee.mt.toolWindow.code.art.enums.ComponentNameEnum;
 import com.augustlee.mt.toolWindow.code.art.vo.MavenVersionVO;
 import com.augustlee.mt.toolWindow.code.art.vo.MavenVersionDataVO;
 import com.augustlee.mt.toolWindow.code.art.vo.MavenVersionItemVO;
+import com.augustlee.mt.toolWindow.common.dialog.CookieHelperDialog;
 import com.augustlee.mt.toolWindow.common.state.CookieInputState;
 
 import javax.swing.*;
@@ -52,6 +53,7 @@ public class ApiMavenSearchPanel {
     private final JTextField PAGE_SIZE_TEXT_FIELD = new JTextField(10);
 
     private final JButton SEARCH_BUTTON = new JButton("Search");
+    private final JButton GET_COOKIE_BUTTON = new JButton("自动获取Cookie");
 
     private final JLabel INFO_LABEL = new JLabel("Total: 0 | Page: 0/0");
     private final JCheckBox IGNORE_SNAPSHOT_CHECKBOX = new JCheckBox("是否忽略SNAPSHOT", true);
@@ -108,13 +110,19 @@ public class ApiMavenSearchPanel {
         MAIN_PANEL.add(this.buildArtLinkPanel(), gbc);
         gbc.gridwidth = 1;
 
-        // 第二行：Cookie标签和多行文本框
+        // 第二行：Cookie标签+获取按钮 和 多行文本框
+        JPanel cookieLeftPanel = new JPanel();
+        cookieLeftPanel.setLayout(new BoxLayout(cookieLeftPanel, BoxLayout.Y_AXIS));
+        cookieLeftPanel.add(COOKIE_LABEL);
+        cookieLeftPanel.add(Box.createVerticalStrut(5));
+        cookieLeftPanel.add(GET_COOKIE_BUTTON);
+
         gbc.gridx = 0;
         gbc.gridy = 1;
         gbc.weightx = 0.0;
         gbc.weighty = 0.0;
         gbc.anchor = GridBagConstraints.NORTHWEST;
-        MAIN_PANEL.add(COOKIE_LABEL, gbc);
+        MAIN_PANEL.add(cookieLeftPanel, gbc);
 
         // Cookie文本区域（设置weighty为0）
         JBScrollPane cookieScrollPane = new JBScrollPane(COOKIE_TEXT_AREA);
@@ -418,6 +426,19 @@ public class ApiMavenSearchPanel {
         COMPONENT_NAME_COMBO_BOX.setSelectedItem(ComponentNameEnum.SEASHOP_USER_API.getFullName());
 
         this.SEARCH_BUTTON.addActionListener(this::searchMavenVersion);
+        this.GET_COOKIE_BUTTON.addActionListener(e -> {
+            CookieHelperDialog dialog = new CookieHelperDialog(
+                    project,
+                    "https://dev.sankuai.com/art/repo/Maven",
+                    cookie -> {
+                        COOKIE_TEXT_AREA.setText(cookie);
+                        if (cookieState != null) {
+                            cookieState.setCookieContent(cookie);
+                        }
+                    }
+            );
+            dialog.show();
+        });
     }
 
     /**
@@ -426,12 +447,12 @@ public class ApiMavenSearchPanel {
     private void setupComponentNameComboBox() {
         // 设置为可编辑，允许用户自定义输入
         COMPONENT_NAME_COMBO_BOX.setEditable(true);
-        
+
         // 添加枚举中的所有组件名称（使用完整名称）
         for (ComponentNameEnum component : ComponentNameEnum.values()) {
             COMPONENT_NAME_COMBO_BOX.addItem(component.getFullName());
         }
-        
+
         // 设置渲染器，显示更友好的名称
         COMPONENT_NAME_COMBO_BOX.setRenderer(new DefaultListCellRenderer() {
             @Override
@@ -657,13 +678,13 @@ public class ApiMavenSearchPanel {
             if (restoreTimer != null) {
                 restoreTimer.cancel();
             }
-            
+
             // 保存当前信息文本
             String currentText = INFO_LABEL.getText();
             if (originalInfoText == null || originalInfoText.isEmpty()) {
                 originalInfoText = currentText;
             }
-            
+
             // 显示缓存加载消息（使用绿色高亮）
             String message = "✓ 已从缓存加载，缓存时间: " + cacheTime;
             INFO_LABEL.setText(message);
@@ -725,7 +746,7 @@ public class ApiMavenSearchPanel {
 
             // 从文本框获取 Cookie，去除换行符和多余空格
             String cookie = COOKIE_TEXT_AREA.getText().trim().replaceAll("\\s+", " ");
-            
+
             MavenVersionManager manager = new MavenVersionManager(pageNum, pageSize, componentName, cookie);
             // 先获取原始响应并保存
             try {
@@ -780,13 +801,13 @@ public class ApiMavenSearchPanel {
                 // 从缓存加载成功
                 MavenVersionVO cachedResult = cacheResult.getData();
                 String cacheTime = MavenVersionCacheManager.formatCacheTime(cacheResult.getTimestamp());
-                
+
                 // 显示缓存提示
                 showCacheMessage(cacheTime);
-                
+
                 // 填充缓存数据
                 displayResult(cachedResult, true);
-                
+
                 // 显示错误信息（但不阻止使用缓存数据）
                 String fullErrorMessage = "搜索失败（已从缓存加载）: " + errorMessage;
                 if (e.getCause() != null) {

@@ -3,6 +3,7 @@ package com.augustlee.mt.toolWindow.mws.panel;
 import com.alibaba.fastjson.JSON;
 import com.intellij.codeInsight.navigation.NavigationUtil;
 import com.intellij.openapi.application.ApplicationManager;
+import com.augustlee.mt.toolWindow.common.dialog.CookieHelperDialog;
 import com.augustlee.mt.toolWindow.common.log.ConsoleLogger;
 import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
@@ -43,6 +44,7 @@ public class ApiSearchPanel {
     private final JTextField API_TEXT_FIELD = new JTextField(30);
 
     private final JButton SEARCH_BUTTON = new JButton("Search");
+    private final JButton GET_COOKIE_BUTTON = new JButton("自动获取Cookie");
 
     private final SearchManager SEARCH_MANAGER = new SearchManager();
 
@@ -78,13 +80,19 @@ public class ApiSearchPanel {
         MAIN_PANEL.add(buildGatewayLinkPanel(), gbc);
         gbc.gridwidth = 1;
 
-        // 第二行：Cookie标签和多行文本框
+        // 第二行：Cookie标签+获取按钮 和 多行文本框
+        JPanel cookieLeftPanel = new JPanel();
+        cookieLeftPanel.setLayout(new BoxLayout(cookieLeftPanel, BoxLayout.Y_AXIS));
+        cookieLeftPanel.add(COOKIE_LABEL);
+        cookieLeftPanel.add(Box.createVerticalStrut(5));
+        cookieLeftPanel.add(GET_COOKIE_BUTTON);
+
         gbc.gridx = 0;
         gbc.gridy = 1;
         gbc.weightx = 0.0;
         gbc.weighty = 0.0;
         gbc.anchor = GridBagConstraints.NORTHWEST;
-        MAIN_PANEL.add(COOKIE_LABEL, gbc);
+        MAIN_PANEL.add(cookieLeftPanel, gbc);
 
         gbc.gridx = 1;
         gbc.weightx = 1.0;
@@ -175,7 +183,19 @@ public class ApiSearchPanel {
 
 
         this.SEARCH_BUTTON.addActionListener(this::searchApi);
-
+        this.GET_COOKIE_BUTTON.addActionListener(e -> {
+            CookieHelperDialog dialog = new CookieHelperDialog(
+                    project,
+                    "https://shepherd.mws-test.sankuai.com/api-group-manage",
+                    cookie -> {
+                        COOKIE_TEXT_AREA.setText(cookie);
+                        if (cookieState != null) {
+                            cookieState.setCookieContent(cookie);
+                        }
+                    }
+            );
+            dialog.show();
+        });
     }
 
     private void searchApi(ActionEvent actionEvent) {
