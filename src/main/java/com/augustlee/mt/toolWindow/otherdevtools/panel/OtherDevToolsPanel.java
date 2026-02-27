@@ -1,4 +1,4 @@
-package com.augustlee.mt.toolWindow.otherdevtools;
+package com.augustlee.mt.toolWindow.otherdevtools.panel;
 
 import com.augustlee.mt.toolWindow.otherdevtools.devfuncbtn.MenuPrivilegeConverter;
 import com.intellij.openapi.project.Project;
@@ -129,7 +129,7 @@ public class OtherDevToolsPanel {
 
         // 添加新的工具面板
         currentToolPanel = toolPanel;
-        TOOL_IMPLEMENTATION_PANEL.add(toolPanel, BorderLayout.CENTER);
+        TOOL_IMPLEMENTATION_PANEL.add(toolPanel, BorderLayout.NORTH);
 
         // 刷新显示
         TOOL_IMPLEMENTATION_PANEL.revalidate();
