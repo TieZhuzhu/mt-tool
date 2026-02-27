@@ -23,6 +23,9 @@ import org.jetbrains.annotations.NotNull;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.net.URI;
 
 /**
  * API 缓存搜索面板
@@ -74,6 +77,16 @@ public class ApiCacheSearchPanel {
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
+        // 第一行：网关地址入口
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        gbc.weightx = 1.0;
+        gbc.weighty = 0;
+        gbc.anchor = GridBagConstraints.WEST;
+        MAIN_PANEL.add(this.buildGatewayLinkPanel(), gbc);
+        gbc.gridwidth = 1;
+
         // 左侧容器
         JPanel leftColumn = new JPanel();
         leftColumn.setLayout(new BoxLayout(leftColumn, BoxLayout.Y_AXIS));
@@ -84,7 +97,7 @@ public class ApiCacheSearchPanel {
 
         // 添加左侧容器（设置weighty为0防止垂直扩展）
         gbc.gridx = 0;
-        gbc.gridy = 0;
+        gbc.gridy = 1;
         gbc.weightx = 0.2;
         gbc.weighty = 0;
         MAIN_PANEL.add(leftColumn, gbc);
@@ -99,7 +112,7 @@ public class ApiCacheSearchPanel {
 
         // API标签和输入框（设置weighty为0）
         gbc.gridx = 0;
-        gbc.gridy = 1;
+        gbc.gridy = 2;
         gbc.weighty = 0;
         MAIN_PANEL.add(API_LABEL, gbc);
 
@@ -108,15 +121,57 @@ public class ApiCacheSearchPanel {
 
         // 搜索按钮（设置weighty为0）
         gbc.gridx = 0;
-        gbc.gridy = 2;
+        gbc.gridy = 3;
         gbc.gridwidth = 2;
         gbc.weighty = 0;
         MAIN_PANEL.add(SEARCH_BUTTON, gbc);
 
         // 添加底部占位符将内容推至顶部
-        gbc.gridy = 3;
+        gbc.gridy = 4;
         gbc.weighty = 1;
         MAIN_PANEL.add(Box.createGlue(), gbc);
+    }
+
+    /**
+     * 构建网关地址入口面板
+     *
+     * @return 包含"网关地址："标签和可点击"点击查看"链接的面板
+     */
+    private JPanel buildGatewayLinkPanel() {
+        final String GATEWAY_URL = "https://shepherd.mws-test.sankuai.com/api-group-manage";
+
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        panel.setOpaque(false);
+
+        JLabel gatewayLabel = new JLabel("网关地址：");
+        JLabel gatewayLink = new JLabel("点击查看");
+        gatewayLink.setForeground(new Color(0, 120, 215));
+        gatewayLink.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        gatewayLink.setToolTipText("点击查看网关");
+        gatewayLink.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                try {
+                    Desktop.getDesktop().browse(new URI(GATEWAY_URL));
+                } catch (Exception ex) {
+                    Messages.showErrorDialog(project, "无法打开浏览器: " + ex.getMessage(), "跳转失败");
+                }
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                gatewayLink.setText("<html><u>点击查看</u></html>");
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                gatewayLink.setText("点击查看");
+            }
+        });
+
+        panel.add(gatewayLabel);
+        panel.add(gatewayLink);
+        return panel;
     }
 
     private void initComponent(){
