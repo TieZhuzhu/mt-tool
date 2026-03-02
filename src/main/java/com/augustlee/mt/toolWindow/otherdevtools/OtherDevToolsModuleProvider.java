@@ -2,6 +2,7 @@ package com.augustlee.mt.toolWindow.otherdevtools;
 
 import com.augustlee.mt.toolWindow.common.api.AbstractModuleProvider;
 import com.augustlee.mt.toolWindow.common.constants.ModulePriority;
+import com.augustlee.mt.toolWindow.otherdevtools.panel.OtherDevToolsPanel;
 import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
 

@@ -7,6 +7,7 @@ import com.augustlee.mt.toolWindow.mws.dto.ClassIndexDTO;
 import com.augustlee.mt.toolWindow.mws.service.SearchCacheManager;
 import com.intellij.codeInsight.navigation.NavigationUtil;
 import com.intellij.openapi.application.ApplicationManager;
+import com.augustlee.mt.toolWindow.common.dialog.CookieHelperDialog;
 import com.augustlee.mt.toolWindow.common.log.ConsoleLogger;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.Task;
@@ -23,6 +24,9 @@ import org.jetbrains.annotations.NotNull;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.net.URI;
 
 /**
  * API 缓存搜索面板
@@ -47,6 +51,7 @@ public class ApiCacheSearchPanel {
     private final JTextField API_TEXT_FIELD = new JTextField(30);
 
     private final JButton SEARCH_BUTTON = new JButton("Search");
+    private final JButton GET_COOKIE_BUTTON = new JButton("自动获取Cookie");
 
     private final SearchCacheManager SEARCH_CACHE_MANAGER;
 
@@ -74,17 +79,29 @@ public class ApiCacheSearchPanel {
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
+        // 第一行：网关地址入口
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        gbc.weightx = 1.0;
+        gbc.weighty = 0;
+        gbc.anchor = GridBagConstraints.WEST;
+        MAIN_PANEL.add(this.buildGatewayLinkPanel(), gbc);
+        gbc.gridwidth = 1;
+
         // 左侧容器
         JPanel leftColumn = new JPanel();
         leftColumn.setLayout(new BoxLayout(leftColumn, BoxLayout.Y_AXIS));
         leftColumn.add(Box.createVerticalStrut(5));
         leftColumn.add(CACHE_SIZE_LABEL);
         leftColumn.add(Box.createVerticalStrut(5));
+        leftColumn.add(GET_COOKIE_BUTTON);
+        leftColumn.add(Box.createVerticalStrut(5));
         leftColumn.add(REFRESH_BUTTON);
 
         // 添加左侧容器（设置weighty为0防止垂直扩展）
         gbc.gridx = 0;
-        gbc.gridy = 0;
+        gbc.gridy = 1;
         gbc.weightx = 0.2;
         gbc.weighty = 0;
         MAIN_PANEL.add(leftColumn, gbc);
@@ -99,7 +116,7 @@ public class ApiCacheSearchPanel {
 
         // API标签和输入框（设置weighty为0）
         gbc.gridx = 0;
-        gbc.gridy = 1;
+        gbc.gridy = 2;
         gbc.weighty = 0;
         MAIN_PANEL.add(API_LABEL, gbc);
 
@@ -108,15 +125,57 @@ public class ApiCacheSearchPanel {
 
         // 搜索按钮（设置weighty为0）
         gbc.gridx = 0;
-        gbc.gridy = 2;
+        gbc.gridy = 3;
         gbc.gridwidth = 2;
         gbc.weighty = 0;
         MAIN_PANEL.add(SEARCH_BUTTON, gbc);
 
         // 添加底部占位符将内容推至顶部
-        gbc.gridy = 3;
+        gbc.gridy = 4;
         gbc.weighty = 1;
         MAIN_PANEL.add(Box.createGlue(), gbc);
+    }
+
+    /**
+     * 构建网关地址入口面板
+     *
+     * @return 包含"网关地址："标签和可点击"点击查看"链接的面板
+     */
+    private JPanel buildGatewayLinkPanel() {
+        final String GATEWAY_URL = "https://shepherd.mws-test.sankuai.com/api-group-manage";
+
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        panel.setOpaque(false);
+
+        JLabel gatewayLabel = new JLabel("网关地址：");
+        JLabel gatewayLink = new JLabel("点击查看");
+        gatewayLink.setForeground(new Color(0, 120, 215));
+        gatewayLink.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        gatewayLink.setToolTipText("点击查看网关");
+        gatewayLink.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                try {
+                    Desktop.getDesktop().browse(new URI(GATEWAY_URL));
+                } catch (Exception ex) {
+                    Messages.showErrorDialog(project, "无法打开浏览器: " + ex.getMessage(), "跳转失败");
+                }
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                gatewayLink.setText("<html><u>点击查看</u></html>");
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                gatewayLink.setText("点击查看");
+            }
+        });
+
+        panel.add(gatewayLabel);
+        panel.add(gatewayLink);
+        return panel;
     }
 
     private void initComponent(){
@@ -137,6 +196,19 @@ public class ApiCacheSearchPanel {
 
         this.SEARCH_BUTTON.addActionListener(this::searchApi);
         this.REFRESH_BUTTON.addActionListener(this::refresh);
+        this.GET_COOKIE_BUTTON.addActionListener(e -> {
+            CookieHelperDialog dialog = new CookieHelperDialog(
+                    project,
+                    "https://shepherd.mws-test.sankuai.com/api-group-manage",
+                    cookie -> {
+                        COOKIE_TEXT_AREA.setText(cookie);
+                        if (cookieState != null) {
+                            cookieState.setCookieContent(cookie);
+                        }
+                    }
+            );
+            dialog.show();
+        });
     }
 
     private void refresh(ActionEvent actionEvent) {
@@ -163,17 +235,17 @@ public class ApiCacheSearchPanel {
                     LOG.info("调用 SEARCH_CACHE_MANAGER.refresh()...");
                     SEARCH_CACHE_MANAGER.refresh();
                     LOG.info("SEARCH_CACHE_MANAGER.refresh() 执行完成");
-                    
+
                     long refreshEndTime = System.currentTimeMillis();
                     long duration = refreshEndTime - refreshStartTime;
                     int apiCount = SEARCH_CACHE_MANAGER.getApiCount();
-                    
+
                     ApplicationManager.getApplication().invokeLater(() -> {
                         LOG.info("更新 UI，缓存大小: " + apiCount);
                         CACHE_SIZE_LABEL.setText(CACHE_SIZE + apiCount);
                         SEARCH_BUTTON.setEnabled(true);
                         REFRESH_BUTTON.setEnabled(true);
-                        
+
                         // 显示成功提示
                         String message = String.format(
                             "API 缓存刷新完成！\n\n" +

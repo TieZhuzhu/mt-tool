@@ -10,6 +10,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -96,17 +99,25 @@ public class MenuPrivilegeConverter {
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // 第一行：菜单数据库SQL标签
+        // 第一行：配置地址入口
         gbc.gridx = 0;
         gbc.gridy = 0;
+        gbc.weightx = 1.0;
+        gbc.weighty = 0.0;
+        gbc.anchor = GridBagConstraints.WEST;
+        MAIN_PANEL.add(this.buildConfigLinkPanel(), gbc);
+
+        // 第二行：菜单数据库SQL标签
+        gbc.gridx = 0;
+        gbc.gridy = 1;
         gbc.weightx = 0.0;
         gbc.weighty = 0.0;
         gbc.anchor = GridBagConstraints.NORTHWEST;
         MAIN_PANEL.add(SQL_LABEL, gbc);
 
-        // 第二行：SQL输入框
+        // 第三行：SQL输入框
         gbc.gridx = 0;
-        gbc.gridy = 1;
+        gbc.gridy = 2;
         gbc.weightx = 1.0;
         gbc.weighty = 0.0;
         gbc.fill = GridBagConstraints.BOTH;
@@ -114,18 +125,18 @@ public class MenuPrivilegeConverter {
         sqlScrollPane.setPreferredSize(new Dimension(0, 150));
         MAIN_PANEL.add(sqlScrollPane, gbc);
 
-        // 第三行：转换按钮
+        // 第四行：转换按钮
         gbc.gridx = 0;
-        gbc.gridy = 2;
+        gbc.gridy = 3;
         gbc.weightx = 1.0;
         gbc.weighty = 0.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.anchor = GridBagConstraints.CENTER;
         MAIN_PANEL.add(CONVERT_BUTTON, gbc);
 
-        // 第四行：结果区域（初始隐藏）
+        // 第五行：结果区域（初始隐藏）
         gbc.gridx = 0;
-        gbc.gridy = 3;
+        gbc.gridy = 4;
         gbc.weightx = 1.0;
         gbc.weighty = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
@@ -133,9 +144,9 @@ public class MenuPrivilegeConverter {
         RESULT_PANEL.setVisible(false);
         MAIN_PANEL.add(RESULT_PANEL, gbc);
 
-        // 第五行：错误信息区域（初始隐藏）
+        // 第六行：错误信息区域（初始隐藏）
         gbc.gridx = 0;
-        gbc.gridy = 4;
+        gbc.gridy = 5;
         gbc.weightx = 1.0;
         gbc.weighty = 0.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -143,6 +154,49 @@ public class MenuPrivilegeConverter {
         ERROR_PANEL.setVisible(false);
         ERROR_PANEL.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
         MAIN_PANEL.add(ERROR_PANEL, gbc);
+    }
+
+    /**
+     * 构建配置地址入口面板
+     *
+     * @return 包含"配置地址："标签和可点击"点击修改"链接的面板
+     */
+    private JPanel buildConfigLinkPanel() {
+        final String CONFIG_URL =
+                "https://lion.mws.sankuai.com/config/dync?env=staging&appKey=com.sankuai.sgb2b.seashop.user&key=Privilege";
+
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        panel.setOpaque(false);
+
+        JLabel configLabel = new JLabel("配置地址：");
+        JLabel configLink = new JLabel("点击修改");
+        configLink.setForeground(new Color(0, 120, 215));
+        configLink.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        configLink.setToolTipText("前往Lion配置页面");
+        configLink.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                try {
+                    Desktop.getDesktop().browse(new URI(CONFIG_URL));
+                } catch (Exception ex) {
+                    Messages.showErrorDialog(project, "无法打开浏览器: " + ex.getMessage(), "跳转失败");
+                }
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                configLink.setText("<html><u>点击修改</u></html>");
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                configLink.setText("点击修改");
+            }
+        });
+
+        panel.add(configLabel);
+        panel.add(configLink);
+        return panel;
     }
 
     /**
@@ -252,9 +306,9 @@ public class MenuPrivilegeConverter {
         // 商家
         groupedMap.put(2, new ArrayList<>());
 
-        // 正则更宽松：允许 NULL | '' | 'xxx' | 数字
+        // 正则更宽松：允许 NULL | '' | 'xxx' | 数字，逗号后空格可选
         Pattern pattern = Pattern.compile(
-                "VALUES \\(([^,]+), '([^']*)', '([^']*)', ([^,]+), ([^,]+), ([^,]+), b'([01])', ([^,]+), ([^,]+), ([^,]+), ([^,]+), ([^,]+), ([^,]+), ([^)]*)\\);"
+                "VALUES\\s*\\(\\s*([^,]+),\\s*'([^']*)',\\s*'([^']*)',\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*b'([01])',\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^)]*)\\);"
         );
 
         Matcher matcher = pattern.matcher(sql);
@@ -456,12 +510,30 @@ public class MenuPrivilegeConverter {
      * @return 下一行号
      */
     private int addResultRow(JPanel panel, String labelText, String jsonText, GridBagConstraints gbc, int row) {
-        // Label
+        // Label（可点击复制 key）
         gbc.gridx = 0;
         gbc.gridy = row;
         gbc.weightx = 0.0;
         gbc.anchor = GridBagConstraints.WEST;
         JLabel label = new JLabel(labelText + "：");
+        label.setToolTipText("点击复制 " + labelText);
+        label.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        label.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                copyToClipboard(labelText);
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                label.setForeground(new Color(0, 120, 215));
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                label.setForeground(UIManager.getColor("Label.foreground"));
+            }
+        });
         panel.add(label, gbc);
 
         // 文本框和复制按钮的容器

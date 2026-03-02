@@ -12,6 +12,7 @@ import com.augustlee.mt.toolWindow.code.art.enums.ComponentNameEnum;
 import com.augustlee.mt.toolWindow.code.art.vo.MavenVersionVO;
 import com.augustlee.mt.toolWindow.code.art.vo.MavenVersionDataVO;
 import com.augustlee.mt.toolWindow.code.art.vo.MavenVersionItemVO;
+import com.augustlee.mt.toolWindow.common.dialog.CookieHelperDialog;
 import com.augustlee.mt.toolWindow.common.state.CookieInputState;
 
 import javax.swing.*;
@@ -22,6 +23,9 @@ import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.net.URI;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -49,6 +53,7 @@ public class ApiMavenSearchPanel {
     private final JTextField PAGE_SIZE_TEXT_FIELD = new JTextField(10);
 
     private final JButton SEARCH_BUTTON = new JButton("Search");
+    private final JButton GET_COOKIE_BUTTON = new JButton("自动获取Cookie");
 
     private final JLabel INFO_LABEL = new JLabel("Total: 0 | Page: 0/0");
     private final JCheckBox IGNORE_SNAPSHOT_CHECKBOX = new JCheckBox("是否忽略SNAPSHOT", true);
@@ -95,13 +100,29 @@ public class ApiMavenSearchPanel {
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // 第一行：Cookie标签和多行文本框
+        // 第一行：ART地址入口
         gbc.gridx = 0;
         gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        gbc.weightx = 1.0;
+        gbc.weighty = 0.0;
+        gbc.anchor = GridBagConstraints.WEST;
+        MAIN_PANEL.add(this.buildArtLinkPanel(), gbc);
+        gbc.gridwidth = 1;
+
+        // 第二行：Cookie标签+获取按钮 和 多行文本框
+        JPanel cookieLeftPanel = new JPanel();
+        cookieLeftPanel.setLayout(new BoxLayout(cookieLeftPanel, BoxLayout.Y_AXIS));
+        cookieLeftPanel.add(COOKIE_LABEL);
+        cookieLeftPanel.add(Box.createVerticalStrut(5));
+        cookieLeftPanel.add(GET_COOKIE_BUTTON);
+
+        gbc.gridx = 0;
+        gbc.gridy = 1;
         gbc.weightx = 0.0;
         gbc.weighty = 0.0;
         gbc.anchor = GridBagConstraints.NORTHWEST;
-        MAIN_PANEL.add(COOKIE_LABEL, gbc);
+        MAIN_PANEL.add(cookieLeftPanel, gbc);
 
         // Cookie文本区域（设置weighty为0）
         JBScrollPane cookieScrollPane = new JBScrollPane(COOKIE_TEXT_AREA);
@@ -112,9 +133,9 @@ public class ApiMavenSearchPanel {
         MAIN_PANEL.add(cookieScrollPane, gbc);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // 第二行：Component Name标签和输入框
+        // 第三行：Component Name标签和输入框
         gbc.gridx = 0;
-        gbc.gridy = 1;
+        gbc.gridy = 2;
         gbc.weightx = 0.0;
         MAIN_PANEL.add(COMPONENT_NAME_LABEL, gbc);
 
@@ -122,9 +143,9 @@ public class ApiMavenSearchPanel {
         gbc.weightx = 1.0;
         MAIN_PANEL.add(COMPONENT_NAME_COMBO_BOX, gbc);
 
-        // 第三行：Page Num 和 Page Size
+        // 第四行：Page Num 和 Page Size
         gbc.gridx = 0;
-        gbc.gridy = 2;
+        gbc.gridy = 3;
         gbc.weightx = 0.0;
         MAIN_PANEL.add(PAGE_NUM_LABEL, gbc);
 
@@ -138,9 +159,9 @@ public class ApiMavenSearchPanel {
         pagePanel.add(PAGE_SIZE_TEXT_FIELD);
         MAIN_PANEL.add(pagePanel, gbc);
 
-        // 第四行：搜索按钮
+        // 第五行：搜索按钮
         gbc.gridx = 0;
-        gbc.gridy = 3;
+        gbc.gridy = 4;
         gbc.gridwidth = 2;
         gbc.weightx = 1.0;
         gbc.weighty = 0.0;
@@ -148,9 +169,9 @@ public class ApiMavenSearchPanel {
         gbc.anchor = GridBagConstraints.CENTER;
         MAIN_PANEL.add(SEARCH_BUTTON, gbc);
 
-        // 第五行：信息标签和复选框（同一行，左右分布）
+        // 第六行：信息标签和复选框（同一行，左右分布）
         gbc.gridx = 0;
-        gbc.gridy = 4;
+        gbc.gridy = 5;
         gbc.gridwidth = 1;
         gbc.weightx = 1.0;
         gbc.weighty = 0.0;
@@ -164,9 +185,9 @@ public class ApiMavenSearchPanel {
         gbc.anchor = GridBagConstraints.EAST;
         MAIN_PANEL.add(IGNORE_SNAPSHOT_CHECKBOX, gbc);
 
-        // 第六行：结果显示表格
+        // 第七行：结果显示表格
         gbc.gridx = 0;
-        gbc.gridy = 5;
+        gbc.gridy = 6;
         gbc.gridwidth = 2;
         gbc.weightx = 1.0;
         gbc.weighty = 1.0;
@@ -178,8 +199,8 @@ public class ApiMavenSearchPanel {
         resultScrollPane.setMinimumSize(new Dimension(0, 200));
         MAIN_PANEL.add(resultScrollPane, gbc);
 
-        // 第七行：错误信息区域（初始隐藏）
-        gbc.gridy = 6;
+        // 第八行：错误信息区域（初始隐藏）
+        gbc.gridy = 7;
         gbc.weightx = 1.0;
         gbc.weighty = 0.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -189,8 +210,8 @@ public class ApiMavenSearchPanel {
         ERROR_PANEL.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
         MAIN_PANEL.add(ERROR_PANEL, gbc);
 
-        // 第八行：原始响应信息区域（初始隐藏）
-        gbc.gridy = 7;
+        // 第九行：原始响应信息区域（初始隐藏）
+        gbc.gridy = 8;
         gbc.weightx = 1.0;
         gbc.weighty = 0.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -199,6 +220,48 @@ public class ApiMavenSearchPanel {
         // 设置原始响应面板的最大高度
         RAW_RESPONSE_PANEL.setMaximumSize(new Dimension(Integer.MAX_VALUE, 300));
         MAIN_PANEL.add(RAW_RESPONSE_PANEL, gbc);
+    }
+
+    /**
+     * 构建ART地址入口面板
+     *
+     * @return 包含"ART地址："标签和可点击"点击查看"链接的面板
+     */
+    private JPanel buildArtLinkPanel() {
+        final String ART_URL = "https://dev.sankuai.com/art/repo/Maven";
+
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        panel.setOpaque(false);
+
+        JLabel artLabel = new JLabel("ART地址：");
+        JLabel artLink = new JLabel("点击查看");
+        artLink.setForeground(new Color(0, 120, 215));
+        artLink.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        artLink.setToolTipText("点击查看ART组件仓库");
+        artLink.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                try {
+                    Desktop.getDesktop().browse(new URI(ART_URL));
+                } catch (Exception ex) {
+                    Messages.showErrorDialog(project, "无法打开浏览器: " + ex.getMessage(), "跳转失败");
+                }
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                artLink.setText("<html><u>点击查看</u></html>");
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                artLink.setText("点击查看");
+            }
+        });
+
+        panel.add(artLabel);
+        panel.add(artLink);
+        return panel;
     }
 
     private void setupErrorPanel() {
@@ -363,6 +426,19 @@ public class ApiMavenSearchPanel {
         COMPONENT_NAME_COMBO_BOX.setSelectedItem(ComponentNameEnum.SEASHOP_USER_API.getFullName());
 
         this.SEARCH_BUTTON.addActionListener(this::searchMavenVersion);
+        this.GET_COOKIE_BUTTON.addActionListener(e -> {
+            CookieHelperDialog dialog = new CookieHelperDialog(
+                    project,
+                    "https://dev.sankuai.com/art/repo/Maven",
+                    cookie -> {
+                        COOKIE_TEXT_AREA.setText(cookie);
+                        if (cookieState != null) {
+                            cookieState.setCookieContent(cookie);
+                        }
+                    }
+            );
+            dialog.show();
+        });
     }
 
     /**
@@ -371,12 +447,12 @@ public class ApiMavenSearchPanel {
     private void setupComponentNameComboBox() {
         // 设置为可编辑，允许用户自定义输入
         COMPONENT_NAME_COMBO_BOX.setEditable(true);
-        
+
         // 添加枚举中的所有组件名称（使用完整名称）
         for (ComponentNameEnum component : ComponentNameEnum.values()) {
             COMPONENT_NAME_COMBO_BOX.addItem(component.getFullName());
         }
-        
+
         // 设置渲染器，显示更友好的名称
         COMPONENT_NAME_COMBO_BOX.setRenderer(new DefaultListCellRenderer() {
             @Override
@@ -602,13 +678,13 @@ public class ApiMavenSearchPanel {
             if (restoreTimer != null) {
                 restoreTimer.cancel();
             }
-            
+
             // 保存当前信息文本
             String currentText = INFO_LABEL.getText();
             if (originalInfoText == null || originalInfoText.isEmpty()) {
                 originalInfoText = currentText;
             }
-            
+
             // 显示缓存加载消息（使用绿色高亮）
             String message = "✓ 已从缓存加载，缓存时间: " + cacheTime;
             INFO_LABEL.setText(message);
@@ -670,7 +746,7 @@ public class ApiMavenSearchPanel {
 
             // 从文本框获取 Cookie，去除换行符和多余空格
             String cookie = COOKIE_TEXT_AREA.getText().trim().replaceAll("\\s+", " ");
-            
+
             MavenVersionManager manager = new MavenVersionManager(pageNum, pageSize, componentName, cookie);
             // 先获取原始响应并保存
             try {
@@ -725,13 +801,13 @@ public class ApiMavenSearchPanel {
                 // 从缓存加载成功
                 MavenVersionVO cachedResult = cacheResult.getData();
                 String cacheTime = MavenVersionCacheManager.formatCacheTime(cacheResult.getTimestamp());
-                
+
                 // 显示缓存提示
                 showCacheMessage(cacheTime);
-                
+
                 // 填充缓存数据
                 displayResult(cachedResult, true);
-                
+
                 // 显示错误信息（但不阻止使用缓存数据）
                 String fullErrorMessage = "搜索失败（已从缓存加载）: " + errorMessage;
                 if (e.getCause() != null) {
