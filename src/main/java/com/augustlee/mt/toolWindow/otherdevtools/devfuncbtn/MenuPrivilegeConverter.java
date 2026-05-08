@@ -308,26 +308,28 @@ public class MenuPrivilegeConverter {
 
         // 正则更宽松：允许 NULL | '' | 'xxx' | 数字，逗号后空格可选
         Pattern pattern = Pattern.compile(
-                "VALUES\\s*\\(\\s*([^,]+),\\s*'([^']*)',\\s*'([^']*)',\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*b'([01])',\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^)]*)\\);"
+                "VALUES\\s*\\(\\s*([^,]+),\\s*'([^']*)',\\s*'([^']*)',\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^)]*)\\);"
         );
 
         Matcher matcher = pattern.matcher(sql);
         List<String> errors = new ArrayList<>();
+        int matchCount = 0;
 
         while (matcher.find()) {
+            matchCount++;
             try {
                 Map<String, Object> node = new HashMap<>();
 
-                node.put("id", Long.parseLong(matcher.group(1).trim()));
+                node.put("id", parseRequiredLongValue(matcher.group(1), "id"));
                 node.put("name", matcher.group(2));
                 node.put("url", matcher.group(3));
                 node.put("icon", parseValue(matcher.group(4)));
                 node.put("action", parseValue(matcher.group(5)));
                 node.put("parentId", parseValue(matcher.group(6)));
-                node.put("whetherDelete", !"0".equals(matcher.group(7)));
+                node.put("whetherDelete", parseWhetherDelete(matcher.group(7)));
                 node.put("displaySequence", parseValue(matcher.group(8)));
 
-                int platformId = Integer.parseInt(matcher.group(9).trim());
+                int platformId = parseRequiredIntegerValue(matcher.group(9), "platform_id");
                 node.put("platformId", platformId);
                 node.put("powerType", parseValue(matcher.group(10)));
 
@@ -346,6 +348,10 @@ public class MenuPrivilegeConverter {
             } catch (Exception e) {
                 errors.add("解析SQL行时出错: " + matcher.group(0) + " - " + e.getMessage());
             }
+        }
+
+        if (matchCount == 0) {
+            throw new IllegalArgumentException("未匹配到可转换的 SQL。请检查是否为 user_privilege 的 INSERT INTO ... VALUES(...) 语句，且字段顺序与工具要求一致。");
         }
 
         // 生成JSON字符串
@@ -379,6 +385,74 @@ public class MenuPrivilegeConverter {
         } catch (NumberFormatException e) {
             return raw;
         }
+    }
+
+    /**
+     * 解析必填的 Long 类型字段。
+     * 支持数字、带引号数字；不支持 NULL 和空字符串。
+     *
+     * @param raw 原始值
+     * @param fieldName 字段名
+     * @return Long 类型值
+     */
+    private Long parseRequiredLongValue(String raw, String fieldName) {
+        Object value = parseValue(raw);
+        if (value == null) {
+            throw new IllegalArgumentException(fieldName + " 不能为空");
+        }
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        try {
+            return Long.parseLong(value.toString().trim());
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(fieldName + " 不是有效数字: " + raw);
+        }
+    }
+
+    /**
+     * 解析必填的 Integer 类型字段。
+     * 支持数字、带引号数字；不支持 NULL 和空字符串。
+     *
+     * @param raw 原始值
+     * @param fieldName 字段名
+     * @return Integer 类型值
+     */
+    private Integer parseRequiredIntegerValue(String raw, String fieldName) {
+        Long value = parseRequiredLongValue(raw, fieldName);
+        return value.intValue();
+    }
+
+    /**
+     * 解析 whether_delete 字段。
+     * 支持 b'0'、b'1'、'0'、'1'、0、1、''。
+     * 其中空字符串按未删除处理，即 false。
+     *
+     * @param raw 原始值
+     * @return 是否删除
+     */
+    private boolean parseWhetherDelete(String raw) {
+        if (raw == null) {
+            return false;
+        }
+        String trimmed = raw.trim();
+        if (trimmed.isEmpty() || "''".equals(trimmed)) {
+            return false;
+        }
+        if ("b'0'".equalsIgnoreCase(trimmed) || "'0'".equals(trimmed) || "0".equals(trimmed)) {
+            return false;
+        }
+        if ("b'1'".equalsIgnoreCase(trimmed) || "'1'".equals(trimmed) || "1".equals(trimmed)) {
+            return true;
+        }
+        Object value = parseValue(trimmed);
+        if (value == null) {
+            return false;
+        }
+        if (value instanceof Number) {
+            return ((Number) value).intValue() != 0;
+        }
+        throw new IllegalArgumentException("whether_delete 不是支持的格式: " + raw);
     }
 
     /**
