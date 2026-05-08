@@ -23,13 +23,18 @@ import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.search.GlobalSearchScope;
+import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBScrollPane;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.net.URI;
@@ -53,6 +58,26 @@ public class ApiCacheSearchPanel {
     private static final int DEFAULT_METHOD_TRACE_DEPTH = 5;
 
     private static final int MAX_METHOD_TRACE_DEPTH = 8;
+
+    private static final int METHOD_RESULT_PATH_COLUMN_INDEX = 0;
+
+    private static final int METHOD_RESULT_ENTRY_METHOD_COLUMN_INDEX = 1;
+
+    private static final int METHOD_RESULT_HIT_TYPE_COLUMN_INDEX = 2;
+
+    private static final int METHOD_RESULT_PATH_COLUMN_WIDTH = 260;
+
+    private static final int METHOD_RESULT_ENTRY_METHOD_MIN_COLUMN_WIDTH = 320;
+
+    private static final int METHOD_RESULT_HIT_TYPE_COLUMN_WIDTH = 120;
+
+    private static final Color METHOD_RESULT_DIRECT_MATCH_COLOR = new JBColor(new Color(15, 110, 58), new Color(98, 180, 122));
+
+    private static final Color METHOD_RESULT_TRACE_MATCH_COLOR = new JBColor(new Color(177, 92, 0), new Color(255, 183, 77));
+
+    private static final Color METHOD_RESULT_EVEN_ROW_COLOR = new JBColor(new Color(255, 255, 255), new Color(60, 63, 65));
+
+    private static final Color METHOD_RESULT_ODD_ROW_COLOR = new JBColor(new Color(247, 249, 252), new Color(65, 69, 71));
 
     private final JPanel MAIN_PANEL = new JPanel();
 
@@ -208,6 +233,12 @@ public class ApiCacheSearchPanel {
         // 结果列表
         JBScrollPane resultScrollPane = new JBScrollPane(METHOD_RESULT_TABLE);
         resultScrollPane.setPreferredSize(new Dimension(0, 220));
+        resultScrollPane.getViewport().addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                applyMethodResultTableColumnWidth();
+            }
+        });
         gbc.gridx = 0;
         gbc.gridy = 9;
         gbc.gridwidth = 2;
@@ -302,6 +333,7 @@ public class ApiCacheSearchPanel {
         numberEditor.getTextField().setColumns(2);
         METHOD_TRACE_DEPTH_SPINNER.setPreferredSize(new Dimension(56, METHOD_TEXT_FIELD.getPreferredSize().height));
         this.initMethodResultTable();
+        this.initMethodResultPopupMenu();
         this.METHOD_COPY_BUTTON.addActionListener(e -> copySelectedApiPath());
         this.METHOD_GO_TO_METHOD_BUTTON.addActionListener(e -> goToSelectedEntryMethod());
         this.METHOD_RESULT_TABLE.addMouseListener(new MouseAdapter() {
@@ -713,7 +745,7 @@ public class ApiCacheSearchPanel {
      * 初始化方法反查结果表格。
      */
     private void initMethodResultTable() {
-        METHOD_RESULT_TABLE.setModel(new javax.swing.table.DefaultTableModel(
+        METHOD_RESULT_TABLE.setModel(new DefaultTableModel(
                 new Object[][]{},
                 new String[]{"接口地址", "入口方法", "命中方式"}
         ) {
@@ -723,22 +755,70 @@ public class ApiCacheSearchPanel {
             }
         });
         METHOD_RESULT_TABLE.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        METHOD_RESULT_TABLE.setRowHeight(28);
+        METHOD_RESULT_TABLE.setRowHeight(30);
         METHOD_RESULT_TABLE.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         METHOD_RESULT_TABLE.setFillsViewportHeight(true);
-        METHOD_RESULT_TABLE.setShowGrid(true);
-        METHOD_RESULT_TABLE.setIntercellSpacing(new Dimension(8, 4));
+        METHOD_RESULT_TABLE.setShowVerticalLines(false);
+        METHOD_RESULT_TABLE.setShowHorizontalLines(true);
+        METHOD_RESULT_TABLE.setGridColor(new JBColor(new Color(229, 233, 239), new Color(82, 82, 82)));
+        METHOD_RESULT_TABLE.setIntercellSpacing(new Dimension(0, 1));
+        METHOD_RESULT_TABLE.setSelectionBackground(new JBColor(new Color(220, 235, 252), new Color(70, 96, 125)));
+        METHOD_RESULT_TABLE.setSelectionForeground(new JBColor(new Color(24, 24, 24), new Color(242, 242, 242)));
         METHOD_RESULT_TABLE.getTableHeader().setReorderingAllowed(false);
-        METHOD_RESULT_TABLE.getColumnModel().getColumn(0).setPreferredWidth(260);
-        METHOD_RESULT_TABLE.getColumnModel().getColumn(1).setPreferredWidth(500);
-        METHOD_RESULT_TABLE.getColumnModel().getColumn(2).setPreferredWidth(150);
-        METHOD_RESULT_TABLE.setDefaultRenderer(Object.class, new javax.swing.table.DefaultTableCellRenderer() {
+        METHOD_RESULT_TABLE.getTableHeader().setResizingAllowed(true);
+        METHOD_RESULT_TABLE.getColumnModel().getColumn(METHOD_RESULT_PATH_COLUMN_INDEX).setResizable(false);
+        METHOD_RESULT_TABLE.getColumnModel().getColumn(METHOD_RESULT_HIT_TYPE_COLUMN_INDEX).setResizable(false);
+        applyMethodResultTableColumnWidth();
+        METHOD_RESULT_TABLE.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                applyMethodResultTableColumnWidth();
+            }
+        });
+        METHOD_RESULT_TABLE.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                if (component instanceof JLabel label) {
-                    label.setToolTipText(value == null ? null : value.toString());
+                if (!(component instanceof JLabel label)) {
+                    return component;
                 }
+
+                ApiMethodSearchResultDTO resultDTO = getMethodSearchResultByViewRow(row);
+                label.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
+                label.setHorizontalAlignment(SwingConstants.LEFT);
+                label.setFont(table.getFont());
+
+                if (!isSelected) {
+                    label.setBackground(row % 2 == 0 ? METHOD_RESULT_EVEN_ROW_COLOR : METHOD_RESULT_ODD_ROW_COLOR);
+                    label.setForeground(table.getForeground());
+                }
+
+                if (resultDTO == null) {
+                    label.setToolTipText(value == null ? null : value.toString());
+                    return component;
+                }
+
+                if (column == METHOD_RESULT_PATH_COLUMN_INDEX) {
+                    label.setText(resultDTO.getPath());
+                    label.setToolTipText(resultDTO.getPath());
+                    return component;
+                }
+                if (column == METHOD_RESULT_ENTRY_METHOD_COLUMN_INDEX) {
+                    label.setText(resultDTO.getEntryMethodShortDisplayText());
+                    label.setToolTipText(resultDTO.getEntryMethodDisplayText());
+                    return component;
+                }
+                if (column == METHOD_RESULT_HIT_TYPE_COLUMN_INDEX) {
+                    label.setText(resultDTO.getHitTypeDisplayText());
+                    label.setToolTipText(resultDTO.getHitTypeDisplayText());
+                    label.setFont(label.getFont().deriveFont(Font.BOLD));
+                    if (!isSelected) {
+                        label.setForeground(resultDTO.isDirectMatch() ? METHOD_RESULT_DIRECT_MATCH_COLOR : METHOD_RESULT_TRACE_MATCH_COLOR);
+                    }
+                    return component;
+                }
+
+                label.setToolTipText(value == null ? null : value.toString());
                 return component;
             }
         });
@@ -757,19 +837,97 @@ public class ApiCacheSearchPanel {
         for (ApiMethodSearchResultDTO resultDTO : this.methodSearchResultList) {
             Vector<Object> rowVector = new Vector<>();
             rowVector.add(resultDTO.getPath());
-            rowVector.add(resultDTO.getEntryMethodDisplayText());
+            rowVector.add(resultDTO.getEntryMethodShortDisplayText());
             rowVector.add(resultDTO.getHitTypeDisplayText());
             dataVector.add(rowVector);
         }
 
-        javax.swing.table.DefaultTableModel tableModel = (javax.swing.table.DefaultTableModel) METHOD_RESULT_TABLE.getModel();
+        DefaultTableModel tableModel = (DefaultTableModel) METHOD_RESULT_TABLE.getModel();
         tableModel.setDataVector(dataVector, columnNameVector);
-        METHOD_RESULT_TABLE.getColumnModel().getColumn(0).setPreferredWidth(260);
-        METHOD_RESULT_TABLE.getColumnModel().getColumn(1).setPreferredWidth(500);
-        METHOD_RESULT_TABLE.getColumnModel().getColumn(2).setPreferredWidth(150);
+        applyMethodResultTableColumnWidth();
         if (!this.methodSearchResultList.isEmpty()) {
             METHOD_RESULT_TABLE.setRowSelectionInterval(0, 0);
         }
+    }
+
+    /**
+     * 初始化方法反查结果右键菜单。
+     */
+    private void initMethodResultPopupMenu() {
+        JPopupMenu popupMenu = new JPopupMenu();
+        JMenuItem copyApiPathMenuItem = new JMenuItem("复制接口地址");
+        JMenuItem goToMethodMenuItem = new JMenuItem("跳转入口方法");
+        copyApiPathMenuItem.addActionListener(e -> copySelectedApiPath());
+        goToMethodMenuItem.addActionListener(e -> goToSelectedEntryMethod());
+        popupMenu.add(copyApiPathMenuItem);
+        popupMenu.add(goToMethodMenuItem);
+
+        METHOD_RESULT_TABLE.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                showPopupMenuIfNecessary(e);
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                showPopupMenuIfNecessary(e);
+            }
+
+            private void showPopupMenuIfNecessary(MouseEvent e) {
+                if (!e.isPopupTrigger()) {
+                    return;
+                }
+                int clickedRow = METHOD_RESULT_TABLE.rowAtPoint(e.getPoint());
+                if (clickedRow >= 0) {
+                    METHOD_RESULT_TABLE.setRowSelectionInterval(clickedRow, clickedRow);
+                }
+                boolean hasSelection = getSelectedMethodSearchResult() != null;
+                copyApiPathMenuItem.setEnabled(hasSelection);
+                goToMethodMenuItem.setEnabled(hasSelection);
+                popupMenu.show(e.getComponent(), e.getX(), e.getY());
+            }
+        });
+    }
+
+    /**
+     * 应用方法反查结果表格列宽。
+     */
+    private void applyMethodResultTableColumnWidth() {
+        int viewportWidth = METHOD_RESULT_TABLE.getParent() == null
+                ? METHOD_RESULT_TABLE.getWidth()
+                : METHOD_RESULT_TABLE.getParent().getWidth();
+        int entryMethodColumnWidth = Math.max(
+                METHOD_RESULT_ENTRY_METHOD_MIN_COLUMN_WIDTH,
+                viewportWidth - METHOD_RESULT_PATH_COLUMN_WIDTH - METHOD_RESULT_HIT_TYPE_COLUMN_WIDTH
+        );
+
+        METHOD_RESULT_TABLE.getColumnModel().getColumn(METHOD_RESULT_PATH_COLUMN_INDEX).setMinWidth(METHOD_RESULT_PATH_COLUMN_WIDTH);
+        METHOD_RESULT_TABLE.getColumnModel().getColumn(METHOD_RESULT_PATH_COLUMN_INDEX).setMaxWidth(METHOD_RESULT_PATH_COLUMN_WIDTH);
+        METHOD_RESULT_TABLE.getColumnModel().getColumn(METHOD_RESULT_PATH_COLUMN_INDEX).setPreferredWidth(METHOD_RESULT_PATH_COLUMN_WIDTH);
+
+        METHOD_RESULT_TABLE.getColumnModel().getColumn(METHOD_RESULT_ENTRY_METHOD_COLUMN_INDEX).setMinWidth(METHOD_RESULT_ENTRY_METHOD_MIN_COLUMN_WIDTH);
+        METHOD_RESULT_TABLE.getColumnModel().getColumn(METHOD_RESULT_ENTRY_METHOD_COLUMN_INDEX).setPreferredWidth(entryMethodColumnWidth);
+
+        METHOD_RESULT_TABLE.getColumnModel().getColumn(METHOD_RESULT_HIT_TYPE_COLUMN_INDEX).setMinWidth(METHOD_RESULT_HIT_TYPE_COLUMN_WIDTH);
+        METHOD_RESULT_TABLE.getColumnModel().getColumn(METHOD_RESULT_HIT_TYPE_COLUMN_INDEX).setMaxWidth(METHOD_RESULT_HIT_TYPE_COLUMN_WIDTH);
+        METHOD_RESULT_TABLE.getColumnModel().getColumn(METHOD_RESULT_HIT_TYPE_COLUMN_INDEX).setPreferredWidth(METHOD_RESULT_HIT_TYPE_COLUMN_WIDTH);
+    }
+
+    /**
+     * 根据表格视图行获取方法反查结果。
+     *
+     * @param viewRow 表格视图行号
+     * @return 方法反查结果
+     */
+    private ApiMethodSearchResultDTO getMethodSearchResultByViewRow(int viewRow) {
+        if (viewRow < 0) {
+            return null;
+        }
+        int modelRow = METHOD_RESULT_TABLE.convertRowIndexToModel(viewRow);
+        if (modelRow < 0 || modelRow >= this.methodSearchResultList.size()) {
+            return null;
+        }
+        return this.methodSearchResultList.get(modelRow);
     }
 
     /**
@@ -779,10 +937,10 @@ public class ApiCacheSearchPanel {
      */
     private ApiMethodSearchResultDTO getSelectedMethodSearchResult() {
         int selectedRow = METHOD_RESULT_TABLE.getSelectedRow();
-        if (selectedRow < 0 || selectedRow >= this.methodSearchResultList.size()) {
+        if (selectedRow < 0) {
             return null;
         }
-        return this.methodSearchResultList.get(selectedRow);
+        return getMethodSearchResultByViewRow(selectedRow);
     }
 
     private void goToCode(String serviceName, String methodName, Project project) {

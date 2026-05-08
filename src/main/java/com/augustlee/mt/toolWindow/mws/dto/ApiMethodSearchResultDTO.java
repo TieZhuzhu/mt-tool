@@ -72,6 +72,20 @@ public class ApiMethodSearchResultDTO {
     }
 
     /**
+     * 获取入口方法短名展示文案。
+     *
+     * @return 入口方法短名展示文案
+     */
+    public String getEntryMethodShortDisplayText() {
+        String simpleClassName = this.entryServiceName;
+        int lastDotIndex = simpleClassName == null ? -1 : simpleClassName.lastIndexOf('.');
+        if (lastDotIndex >= 0 && lastDotIndex < simpleClassName.length() - 1) {
+            simpleClassName = simpleClassName.substring(lastDotIndex + 1);
+        }
+        return simpleClassName + "#" + this.entryMethodName;
+    }
+
+    /**
      * 获取命中方式展示文案。
      *
      * @return 命中方式展示文案
