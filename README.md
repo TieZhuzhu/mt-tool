@@ -1,21 +1,36 @@
 # 美团工具集
-美团开发者工具集(HiShop专用)
 
-提供美团相关开发工具的集成功能，包括：
+美团开发者工具集（HiShop 专用）。
 
-- **API 查找工具**
-  - 架构重构，优化性能，解决索引慢、强阻塞问题
-  - 顶部快捷跳转网关地址入口
-  - 一键获取 Cookie（JS 代码片段 + 剪贴板自动检测，100% 兼容所有 IDEA 版本）
+## 功能概览
 
-- **MAVEN 查找工具**
-  - 顶部快捷跳转 ART 组件仓库地址入口
-  - 一键获取 Cookie（与 API 工具共享同一套辅助对话框）
+- API 查询工具
+  - 支持通过 API path 跳转到对应 Java 方法
+  - 支持刷新 API Search Cache 本地缓存
+  - 支持通过 Java 方法全限定名反查 API path
+  - 支持点击反查结果直接复制 API path
+  - 支持自动获取 Cookie
+- Maven 查询工具
+  - 支持快捷跳转 ART 组件仓库
+  - 支持自动获取 Cookie
+- Other Dev Tools
+  - 支持 ST 菜单转换工具
+  - 支持结果键名点击复制
+  - 支持快捷跳转 Lion 配置中心
 
-- **Other Dev Tools 其余开发工具**
-  - ST 菜单转换工具：SQL → Lion JSON 批量转换
-  - 结果键名（如 `user.platformPrivilege`）点击即复制
-  - 顶部快捷跳转 Lion 配置中心地址入口
-  - 优化 SQL 解析兼容性，支持值之间空格不规则的 INSERT 语句
+## API Search Cache 新能力
 
-提高美团项目生态开发效率
+在 `API Search Cache` 选项卡中，刷新缓存后除了可以按 API path 跳转代码，现在还可以按方法反查接口地址。
+
+支持的输入格式：
+
+- `com.foo.Service#methodName`
+- `com.foo.Service.methodName`
+- `com.foo.Service#methodName(Request)`
+
+使用方式：
+
+1. 点击 `Refresh` 刷新缓存。
+2. 在 `Method` 输入框中输入方法表达式。
+3. 点击 `Query API Path` 查询。
+4. 在结果列表中点击任意一条 API path 直接复制。
