@@ -1,6 +1,7 @@
 package com.augustlee.mt.toolWindow.mws.service;
 
 import com.alibaba.fastjson.JSON;
+import com.augustlee.mt.toolWindow.common.log.ConsoleLogger;
 import com.augustlee.mt.toolWindow.common.state.ApiPathState;
 import com.augustlee.mt.toolWindow.mws.dto.ApiIndexDTO;
 import com.augustlee.mt.toolWindow.mws.dto.ClassIndexDTO;
@@ -11,10 +12,10 @@ import com.augustlee.mt.toolWindow.mws.po.ApiDetailPO;
 import com.augustlee.mt.toolWindow.mws.vo.ApiDetailVO;
 import com.augustlee.mt.toolWindow.mws.vo.ApiVO;
 import com.intellij.openapi.application.ApplicationManager;
-import com.augustlee.mt.toolWindow.common.log.ConsoleLogger;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -40,6 +41,13 @@ public class SearchCacheManager {
 
     private final static Map<String, ClassIndexDTO> CLASS_INDEX_MAP = new ConcurrentHashMap<>();
 
+    /**
+     * 方法索引：
+     * key 为 serviceName#methodName
+     * value 为命中的 API 列表
+     */
+    private final static Map<String, List<ApiIndexDTO>> METHOD_INDEX_MAP = new ConcurrentHashMap<>();
+
     private final ApiPathState apiPathState;
 
     /**
@@ -55,6 +63,12 @@ public class SearchCacheManager {
         init();
     }
 
+    /**
+     * 根据 API path 查询缓存索引。
+     *
+     * @param path API 路径
+     * @return 类方法索引
+     */
     public ClassIndexDTO getClassIndex(String path) {
         if (path == null || path.isEmpty()) {
             LOG.warn("搜索路径为空");
@@ -74,7 +88,26 @@ public class SearchCacheManager {
         return result;
     }
 
-    public void refresh(){
+    /**
+     * 根据服务名和方法名反向查询 API 列表。
+     *
+     * @param serviceName 服务全限定名
+     * @param methodName 方法名
+     * @return 匹配到的 API 列表，无结果时返回空列表
+     */
+    public List<ApiIndexDTO> getApiIndexListByMethod(String serviceName, String methodName) {
+        String methodKey = buildMethodKey(serviceName, methodName);
+        if (methodKey == null) {
+            return Collections.emptyList();
+        }
+        List<ApiIndexDTO> apiIndexDTOList = METHOD_INDEX_MAP.get(methodKey);
+        if (apiIndexDTOList == null || apiIndexDTOList.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return new ArrayList<>(apiIndexDTOList);
+    }
+
+    public void refresh() {
         LOG.info("========== SearchCacheManager.refresh() 被调用 ==========");
         long startTime = System.currentTimeMillis();
 
@@ -214,12 +247,12 @@ public class SearchCacheManager {
         LOG.info("API 缓存刷新完成，共缓存 " + detailResults.size() + " 个 API，总耗时 " + (endTime - startTime) + " ms");
     }
 
-    public int getApiCount(){
+    public int getApiCount() {
         return CLASS_INDEX_MAP.size();
     }
 
 
-    private void init(){
+    private void init() {
         if (apiPathState == null) {
             return;
         }
@@ -239,14 +272,40 @@ public class SearchCacheManager {
         return API_MANAGER_MAP.computeIfAbsent(groupId, ApiManager::new);
     }
 
-    private void refreshClassIndex(List<ApiIndexDTO> list){
-        CLASS_INDEX_MAP.clear();
+    /**
+     * 构建方法索引 key。
+     *
+     * @param serviceName 服务全限定名
+     * @param methodName 方法名
+     * @return 方法索引 key
+     */
+    private String buildMethodKey(String serviceName, String methodName) {
+        if (serviceName == null || methodName == null) {
+            return null;
+        }
+        String serviceNameValue = serviceName.trim();
+        String methodNameValue = methodName.trim();
+        if (serviceNameValue.isEmpty() || methodNameValue.isEmpty()) {
+            return null;
+        }
+        return serviceNameValue + "#" + methodNameValue;
+    }
 
-        if(list == null || list.isEmpty()){
+    private void refreshClassIndex(List<ApiIndexDTO> list) {
+        CLASS_INDEX_MAP.clear();
+        METHOD_INDEX_MAP.clear();
+
+        if (list == null || list.isEmpty()) {
             return;
         }
-        list.forEach(apiIndexDTO -> CLASS_INDEX_MAP.put(apiIndexDTO.getPath(), apiIndexDTO));
+        list.forEach(apiIndexDTO -> {
+            CLASS_INDEX_MAP.put(apiIndexDTO.getPath(), apiIndexDTO);
+
+            String methodKey = buildMethodKey(apiIndexDTO.getServiceName(), apiIndexDTO.getMethodName());
+            if (methodKey != null) {
+                METHOD_INDEX_MAP.computeIfAbsent(methodKey, key -> new ArrayList<>()).add(apiIndexDTO);
+            }
+        });
     }
 
 }
-

@@ -14,35 +14,38 @@
          Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
          Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
     <description><![CDATA[
-    <h3>美团开发者工具集(HiShop专用)</h3>
+    <h3>美团开发者工具集（HiShop 专用）</h3>
     <p>提供美团相关开发工具的集成功能，包括：</p>
     <ul>
-        <li>API 查找工具
+        <li>API 查询工具
             <ul>
-                <li>架构重构，优化性能，解决索引慢、强阻塞问题</li>
-                <li>顶部快捷跳转网关地址入口</li>
-                <li>一键获取 Cookie（JS 代码片段 + 剪贴板自动检测，100% 兼容所有 IDEA 版本）</li>
+                <li>支持通过 API path 跳转到对应 Java 方法</li>
+                <li>支持刷新 API Search Cache 本地缓存</li>
+                <li>支持通过 Java 方法全限定名反查 API path</li>
+                <li>支持沿方法调用链向上钻取，查询所有可达的 API path</li>
+                <li>支持点击反查结果直接复制 API path</li>
+                <li>支持 API 搜索自动补齐前导 /</li>
+                <li>支持自动获取 Cookie</li>
             </ul>
         </li>
-        <li>MAVEN 查找工具
+        <li>Maven 查询工具
             <ul>
-                <li>顶部快捷跳转 ART 组件仓库地址入口</li>
-                <li>一键获取 Cookie（与 API 工具共享同一套辅助对话框）</li>
+                <li>支持快捷跳转 ART 组件仓库地址</li>
+                <li>支持自动获取 Cookie</li>
             </ul>
         </li>
-        <li>Other Dev Tools 其余开发工具
+        <li>Other Dev Tools
             <ul>
-                <li>ST 菜单转换工具：SQL → Lion JSON 批量转换</li>
-                <li>结果键名（如 user.platformPrivilege）点击即复制</li>
-                <li>顶部快捷跳转 Lion 配置中心地址入口</li>
-                <li>优化 SQL 解析兼容性，支持值之间空格不规则的 INSERT 语句</li>
+                <li>支持 ST 菜单转换工具</li>
+                <li>支持结果键名点击复制</li>
+                <li>支持快捷跳转 Lion 配置中心</li>
             </ul>
         </li>
     </ul>
-    <p>提高美团项目生态开发效率</p>
+    <p>提升美团项目生态中的日常开发效率。</p>
   ]]></description>
 
-    <idea-version since-build="231" until-build="253.*"/>
+    <idea-version since-build="231"/>
 
     <!-- Product and plugin compatibility requirements.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
