@@ -344,6 +344,9 @@ public class ApiCacheSearchPanel {
                 return;
             }
 
+            path = this.normalizeApiPath(path);
+            this.API_TEXT_FIELD.setText(path);
+
             // 检查缓存是否为空
             int cacheSize = this.SEARCH_CACHE_MANAGER.getApiCount();
             if (cacheSize == 0) {
@@ -368,6 +371,21 @@ public class ApiCacheSearchPanel {
             Messages.showErrorDialog(project, e.getMessage(), "Search Failed");
             e.printStackTrace();
         }
+    }
+
+    /**
+     * 规范化 API 路径。
+     *
+     * <p>当前缓存中的接口地址统一以“/”开头，因此当用户输入未带前导斜杠时，自动补齐。</p>
+     *
+     * @param path 用户输入的 API 路径
+     * @return 规范化后的 API 路径
+     */
+    private String normalizeApiPath(String path) {
+        if (path.startsWith("/")) {
+            return path;
+        }
+        return "/" + path;
     }
 
     /**
