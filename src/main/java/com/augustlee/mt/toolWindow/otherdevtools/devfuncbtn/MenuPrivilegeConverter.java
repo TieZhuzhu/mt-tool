@@ -306,52 +306,14 @@ public class MenuPrivilegeConverter {
         // 商家
         groupedMap.put(2, new ArrayList<>());
 
-        // 正则更宽松：允许 NULL | '' | 'xxx' | 数字，逗号后空格可选
-        Pattern pattern = Pattern.compile(
-                "VALUES\\s*\\(\\s*([^,]+),\\s*'([^']*)',\\s*'([^']*)',\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^)]*)\\);"
-        );
-
-        Matcher matcher = pattern.matcher(sql);
         List<String> errors = new ArrayList<>();
         int matchCount = 0;
 
-        while (matcher.find()) {
-            matchCount++;
-            try {
-                Map<String, Object> node = new HashMap<>();
-
-                node.put("id", parseRequiredLongValue(matcher.group(1), "id"));
-                node.put("name", matcher.group(2));
-                node.put("url", matcher.group(3));
-                node.put("icon", parseValue(matcher.group(4)));
-                node.put("action", parseValue(matcher.group(5)));
-                node.put("parentId", parseValue(matcher.group(6)));
-                node.put("whetherDelete", parseWhetherDelete(matcher.group(7)));
-                node.put("displaySequence", parseValue(matcher.group(8)));
-
-                int platformId = parseRequiredIntegerValue(matcher.group(9), "platform_id");
-                node.put("platformId", platformId);
-                node.put("powerType", parseValue(matcher.group(10)));
-
-                // createTime 和 updateTime 不包含在输出中
-                // node.put("createTime", parseValue(matcher.group(11)));
-                // node.put("updateTime", parseValue(matcher.group(12)));
-
-                node.put("shopType", parseValue(matcher.group(13)));
-                node.put("activedIcon", parseValue(matcher.group(14)));
-
-                if (groupedMap.containsKey(platformId)) {
-                    groupedMap.get(platformId).add(node);
-                } else {
-                    errors.add("未知的 platformId: " + platformId);
-                }
-            } catch (Exception e) {
-                errors.add("解析SQL行时出错: " + matcher.group(0) + " - " + e.getMessage());
-            }
-        }
+        matchCount += parseValuesStatements(sql, groupedMap, errors);
+        matchCount += parseSetStatements(sql, groupedMap, errors);
 
         if (matchCount == 0) {
-            throw new IllegalArgumentException("未匹配到可转换的 SQL。请检查是否为 user_privilege 的 INSERT INTO ... VALUES(...) 语句，且字段顺序与工具要求一致。");
+            throw new IllegalArgumentException("未匹配到可转换的 SQL。请检查是否为 user_privilege 的 INSERT INTO ... VALUES(...) 或 INSERT INTO ... SET ... 语句，且字段顺序与工具要求一致。");
         }
 
         // 生成JSON字符串
@@ -360,6 +322,136 @@ public class MenuPrivilegeConverter {
         String shopPrivilegeJson = formatGroup("user.shopPrivilege", groupedMap.get(2));
 
         return new ConversionResult(platformPrivilegeJson, sellerPrivilegeJson, shopPrivilegeJson, errors);
+    }
+
+    /**
+     * 解析 INSERT INTO ... VALUES(...) 形式的 SQL。
+     *
+     * @param sql SQL字符串
+     * @param groupedMap 分组结果
+     * @param errors 错误集合
+     * @return 匹配到的语句数量
+     */
+    private int parseValuesStatements(String sql, Map<Integer, List<Map<String, Object>>> groupedMap, List<String> errors) {
+        Pattern pattern = Pattern.compile(
+                "VALUES\\s*\\(\\s*([^,]+),\\s*'([^']*)',\\s*'([^']*)',\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^,]+),\\s*([^)]*)\\);",
+                Pattern.CASE_INSENSITIVE
+        );
+
+        Matcher matcher = pattern.matcher(sql);
+        int matchCount = 0;
+        while (matcher.find()) {
+            matchCount++;
+            try {
+                Map<String, String> fieldMap = new HashMap<>();
+                fieldMap.put("id", matcher.group(1));
+                fieldMap.put("name", matcher.group(2));
+                fieldMap.put("url", matcher.group(3));
+                fieldMap.put("icon", matcher.group(4));
+                fieldMap.put("action", matcher.group(5));
+                fieldMap.put("parent_id", matcher.group(6));
+                fieldMap.put("whether_delete", matcher.group(7));
+                fieldMap.put("display_sequence", matcher.group(8));
+                fieldMap.put("platform_id", matcher.group(9));
+                fieldMap.put("power_type", matcher.group(10));
+                fieldMap.put("create_time", matcher.group(11));
+                fieldMap.put("update_time", matcher.group(12));
+                fieldMap.put("shop_type", matcher.group(13));
+                fieldMap.put("actived_icon", matcher.group(14));
+                addNodeToGroup(groupedMap, fieldMap);
+            } catch (Exception e) {
+                errors.add("解析 VALUES SQL 行时出错: " + matcher.group(0) + " - " + e.getMessage());
+            }
+        }
+        return matchCount;
+    }
+
+    /**
+     * 解析 INSERT INTO ... SET ... 形式的 SQL。
+     *
+     * @param sql SQL字符串
+     * @param groupedMap 分组结果
+     * @param errors 错误集合
+     * @return 匹配到的语句数量
+     */
+    private int parseSetStatements(String sql, Map<Integer, List<Map<String, Object>>> groupedMap, List<String> errors) {
+        Pattern statementPattern = Pattern.compile(
+                "INSERT\\s+INTO\\s+`?user_privilege`?\\s+SET\\s+(.*?)\\s*;",
+                Pattern.CASE_INSENSITIVE | Pattern.DOTALL
+        );
+
+        Matcher matcher = statementPattern.matcher(sql);
+        int matchCount = 0;
+        while (matcher.find()) {
+            matchCount++;
+            String statement = matcher.group(0);
+            String setClause = matcher.group(1);
+            try {
+                Map<String, String> fieldMap = parseSetFieldMap(setClause);
+                addNodeToGroup(groupedMap, fieldMap);
+            } catch (Exception e) {
+                errors.add("解析 SET SQL 行时出错: " + statement + " - " + e.getMessage());
+            }
+        }
+        return matchCount;
+    }
+
+    /**
+     * 解析 SET 子句中的字段和值。
+     *
+     * @param setClause SET 子句
+     * @return 字段值映射
+     */
+    private Map<String, String> parseSetFieldMap(String setClause) {
+        Pattern assignmentPattern = Pattern.compile(
+                "`([^`]+)`\\s*=\\s*(NULL|'[^']*'|true|false|[^,]+)(?:,|$)",
+                Pattern.CASE_INSENSITIVE | Pattern.DOTALL
+        );
+        Matcher matcher = assignmentPattern.matcher(setClause);
+        Map<String, String> fieldMap = new HashMap<>();
+        while (matcher.find()) {
+            fieldMap.put(matcher.group(1), matcher.group(2).trim());
+        }
+        if (fieldMap.isEmpty()) {
+            throw new IllegalArgumentException("SET 子句未解析到任何字段");
+        }
+        return fieldMap;
+    }
+
+    /**
+     * 将字段映射转换为节点并放入对应平台分组。
+     *
+     * @param groupedMap 分组结果
+     * @param fieldMap 字段映射
+     */
+    private void addNodeToGroup(Map<Integer, List<Map<String, Object>>> groupedMap, Map<String, String> fieldMap) {
+        Map<String, Object> node = new HashMap<>();
+
+        node.put("id", parseRequiredLongValue(fieldMap.get("id"), "id"));
+        node.put("name", parseValue(fieldMap.get("name")));
+        node.put("url", parseValue(fieldMap.get("url")));
+        node.put("icon", parseValue(fieldMap.get("icon")));
+        node.put("action", parseValue(fieldMap.get("action")));
+        node.put("parentId", parseValue(fieldMap.get("parent_id")));
+        node.put("whetherDelete", parseWhetherDelete(fieldMap.get("whether_delete")));
+        node.put("displaySequence", parseValue(fieldMap.get("display_sequence")));
+
+        int platformId = parseRequiredIntegerValue(fieldMap.get("platform_id"), "platform_id");
+        node.put("platformId", platformId);
+        node.put("powerType", parseValue(fieldMap.get("power_type")));
+
+        // createTime 和 updateTime 不包含在输出中
+        // node.put("createTime", parseValue(fieldMap.get("create_time")));
+        // node.put("updateTime", parseValue(fieldMap.get("update_time")));
+
+        node.put("shopType", parseValue(fieldMap.get("shop_type")));
+        node.put("activedIcon", parseValue(fieldMap.get("actived_icon")));
+
+        if (groupedMap.containsKey(platformId)) {
+            groupedMap.get(platformId).add(node);
+            return;
+        }
+        throw new IllegalArgumentException("未知的 platformId: " + platformId);
     }
 
     /**
@@ -425,7 +517,7 @@ public class MenuPrivilegeConverter {
 
     /**
      * 解析 whether_delete 字段。
-     * 支持 b'0'、b'1'、'0'、'1'、0、1、''。
+     * 支持 b'0'、b'1'、'0'、'1'、0、1、''、false、true。
      * 其中空字符串按未删除处理，即 false。
      *
      * @param raw 原始值
@@ -438,6 +530,12 @@ public class MenuPrivilegeConverter {
         String trimmed = raw.trim();
         if (trimmed.isEmpty() || "''".equals(trimmed)) {
             return false;
+        }
+        if ("false".equalsIgnoreCase(trimmed) || "'false'".equalsIgnoreCase(trimmed)) {
+            return false;
+        }
+        if ("true".equalsIgnoreCase(trimmed) || "'true'".equalsIgnoreCase(trimmed)) {
+            return true;
         }
         if ("b'0'".equalsIgnoreCase(trimmed) || "'0'".equals(trimmed) || "0".equals(trimmed)) {
             return false;
