@@ -22,7 +22,9 @@
                 <li>支持通过 API path 跳转到对应 Java 方法</li>
                 <li>支持刷新 API Search Cache 本地缓存</li>
                 <li>支持通过 Java 方法全限定名反查 API path</li>
+                <li>支持沿方法调用链向上钻取，查询所有可达的 API path</li>
                 <li>支持点击反查结果直接复制 API path</li>
+                <li>支持 API 搜索自动补齐前导 /</li>
                 <li>支持自动获取 Cookie</li>
             </ul>
         </li>

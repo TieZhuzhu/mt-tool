@@ -7,335 +7,444 @@
 
 ## 1. 背景与目标
 
-当前 `API Search Cache` 选项卡在刷新缓存后，只支持输入接口地址 `path`，再从缓存中找到 `serviceName + methodName` 并跳转到具体 Java 方法。
+当前 `API Search Cache` 选项卡已经具备以下能力：
 
-本次需求是在同一个 `API Search Cache` 选项卡中增加“方法反查接口地址”的能力：用户输入常见 Java 方法表达式，例如：
+1. 支持刷新 API 缓存；
+2. 支持根据 API path 跳转到对应 Java 方法；
+3. 支持根据方法全限定名反向查询 API path；
+4. 支持点击结果复制 API path；
+5. 支持 API 搜索输入自动补齐前导 `/`。
 
-```text
-com.sankuai.sgb2b.seashop.mall.api.thrift.service.promotion.ApiFlashSaleQueryThriftService#mallPageList
-```
+在此基础上，新增第二阶段需求：
 
-系统应能识别出目标方法，从已缓存的 API 数据中反向查询接口地址，并在面板中展示结果；用户点击结果时可以复制接口地址。
+> 当用户输入某个“底层方法”时，不仅要查询该方法本身直接绑定的 API path，还要继续向上查找它的调用方方法；如果上层调用链最终能回到已缓存的 API 入口方法，则这些 API path 也需要一起展示出来。
 
-## 2. 现状梳理
+等价理解：
 
-### 2.1 当前关键类
-
-- `src/main/java/com/augustlee/mt/toolWindow/mws/panel/ApiCacheSearchPanel.java`
-  - 面板 UI。
-  - 当前输入框 `API_TEXT_FIELD` 仅按 API path 搜索。
-  - 点击 `SEARCH_BUTTON` 后调用 `SearchCacheManager#getClassIndex(path)`。
-  - 找到后调用 `goToCode(serviceName, methodName, project)` 跳转方法。
-
-- `src/main/java/com/augustlee/mt/toolWindow/mws/service/SearchCacheManager.java`
-  - 负责刷新、初始化、读取 API 缓存。
-  - 当前核心索引为：
-
-    ```java
-    private final static Map<String, ClassIndexDTO> CLASS_INDEX_MAP = new ConcurrentHashMap<>();
-    ```
-
-  - key 是接口地址 `path`，value 是 `ClassIndexDTO(serviceName, methodName)`。
-  - 缓存持久化内容为 `List<ApiIndexDTO>` 的 JSON，`ApiIndexDTO` 目前包含：`path`、`serviceName`、`methodName`。
-
-### 2.2 当前数据已经足够支持反查
-
-`ApiIndexDTO` 同时拥有 `path`、`serviceName`、`methodName`，所以不需要额外请求网关接口，也不需要修改持久化结构。
-
-推荐新增一个内存反向索引：
-
-```java
-Map<String, List<ApiIndexDTO>> METHOD_INDEX_MAP
-```
-
-key 使用标准化后的方法签名，value 是匹配到的接口列表。value 使用 `List` 是因为同一个 Java 方法理论上可能被多个 API path 绑定。
-
-## 3. 需求范围
-
-### 3.1 做什么
-
-1. 在 `API Search Cache` 同页面中增加“按方法查询接口地址”的入口。
-2. 支持从用户输入中解析 `serviceName` 与 `methodName`。
-3. 基于缓存反向查询一个或多个 API path。
-4. 在同面板中展示结果。
-5. 点击结果中的 API path 复制到系统剪贴板。
-6. 缓存为空、输入非法、无匹配时给出明确提示。
-
-### 3.2 不做什么
-
-1. 不改网关 API 请求逻辑。
-2. 不增加新的持久化字段，避免破坏旧缓存兼容性。
-3. 不做模糊搜索或全文搜索，第一版只做确定性反查。
-4. 不改变原有“按接口地址跳转方法”的功能。
-
-## 4. 交互设计
-
-### 4.1 推荐 UI：在同一面板增加查询模式区域
-
-在现有 `API Search Cache` 面板下方增加一个轻量区域，不新开顶层 ToolWindow：
-
-```text
-[API Search Cache]
-
-Cache size: 123          [自动获取Cookie]
-                         [Refresh]
-Cookie:                  <cookie text area>
-
-API:                     [/api/path]
-                         [Search]
-
-Method:                  [com.xxx.Service#method]
-                         [Query API Path]
-
-Result:
-- /api/xxx/path          [点击复制]
-- /api/yyy/path          [点击复制]
-```
-
-说明：
-
-- 保留原 `API:` 输入框和 `Search` 按钮，行为不变。
-- 新增 `Method:` 输入框和 `Query API Path` 按钮。
-- 新增结果区 `Result`，用 `JList` 或垂直 `JPanel` 展示 API path。
-- 点击单条 API path 复制该 path 到系统剪贴板，并弹出轻提示或状态文字。
-
-### 4.2 结果展示控件选择
-
-推荐使用 `JList<ApiIndexDTO>` 或 `JList<String>`：
-
-- 简单、代码少。
-- 自带选择模型。
-- 双击或单击均容易处理。
-- 适合多结果。
-
-第一版交互建议：
-
-- 单击结果行：复制 path。
-- 复制成功后更新面板内状态文字，例如：`已复制: /api/xxx/path`。
-
-这样满足“点击允许复制”，同时避免每次复制都弹窗打断操作。
-
-## 5. 方法表达式识别设计
-
-### 5.1 标准缓存 key
-
-新增标准方法 key：
-
-```text
-<serviceName>#<methodName>
-```
+- 现有能力：`方法 -> 直接绑定的接口地址`
+- 新增能力：`方法 -> 上层调用链 -> 所有可到达的接口入口地址`
 
 例如：
 
 ```text
-com.sankuai.sgb2b.seashop.mall.api.thrift.service.promotion.ApiFlashSaleQueryThriftService#mallPageList
+API入口方法A -> Service方法B -> Domain方法C -> Utility方法D
 ```
 
-构建方式：
+如果用户查询的是 `Utility方法D`，系统应能继续向上钻取调用链，最终将 `API入口方法A` 绑定的接口地址展示出来。
 
-```java
-serviceName.trim() + "#" + methodName.trim()
+### 1.1 当前实现落地说明
+
+当前实现已经按本设计落地，核心结构如下：
+
+1. `SearchCacheManager`
+   - 继续负责缓存读取、path 索引、method 索引；
+2. `ApiMethodCallTraceService`
+   - 负责基于 IntelliJ PSI 做方法定位、调用方搜索、上钻遍历与结果汇总；
+3. `ApiCacheSearchPanel`
+   - 新增 `上钻层级` 控件；
+   - 查询结果升级为对象展示，展示接口地址、入口方法、命中方式；
+4. `ApiMethodQueryDTO` / `ApiMethodSearchResultDTO`
+   - 分别承载查询参数与结果展示信息。
+
+## 2. 本次设计范围
+
+### 2.1 已完成能力同步
+
+本设计文档需同步记录当前已落地能力：
+
+1. 方法表达式反查 API path；
+2. 查询结果点击复制；
+3. API 搜索输入未带 `/` 时自动补齐。
+
+### 2.2 新增设计范围
+
+本次新增设计仅覆盖以下内容：
+
+1. 方法反查时支持“上钻调用链”；
+2. 上钻层级可配置；
+3. 查询结果需要能区分：
+   - 直接命中的接口；
+   - 通过上层调用链追溯得到的接口；
+4. 继续保持当前同面板查询，不新增新的 ToolWindow。
+
+### 2.3 明确不做
+
+1. 不做全局全文检索；
+2. 不做跨语言调用链分析；
+3. 不修改网关缓存持久化结构；
+4. 不做复杂图谱可视化，第一版仍以列表展示为主；
+5. 不引入数据库或远程服务依赖，继续基于本地缓存 + IDE PSI 分析。
+
+## 3. 现状梳理
+
+### 3.1 当前缓存能力
+
+当前 `SearchCacheManager` 已具备：
+
+- `path -> ClassIndexDTO(serviceName, methodName)` 正向索引；
+- `serviceName#methodName -> List<ApiIndexDTO>` 反向索引。
+
+这使得“直接绑定方法”的接口反查已经可以完成。
+
+### 3.2 新需求为什么不能只靠缓存完成
+
+对于“方法上钻反查”，仅靠缓存中的 `serviceName + methodName + path` 不够。
+
+原因是缓存只知道：
+
+- 哪个接口地址绑定了哪个入口方法；
+
+但不知道：
+
+- 某个普通方法被哪些上层方法调用；
+- 调用链是否最终连接到某个 API 入口方法。
+
+因此第二阶段需要引入 **IDE 项目代码调用关系分析**，而不是单纯查缓存。
+
+## 4. 核心设计思路
+
+## 4.1 总体方案
+
+查询流程分为两段：
+
+### 阶段一：定位目标方法
+
+用户输入方法表达式，例如：
+
+```text
+com.foo.OrderService#createOrder
+com.foo.OrderService.createOrder
+com.foo.OrderService#createOrder(Request)
 ```
 
-### 5.2 支持的输入表达式
+系统先解析表达式，并定位到一个或多个 `PsiMethod`。
 
-第一版建议支持以下常见表达方式：
+### 阶段二：向上钻取调用链并回查接口
 
-| 输入形式 | 示例 | 解析结果 |
-| --- | --- | --- |
-| `类全限定名#方法名` | `com.foo.UserService#getUser` | service=`com.foo.UserService`, method=`getUser` |
-| `类全限定名.方法名` | `com.foo.UserService.getUser` | service=`com.foo.UserService`, method=`getUser` |
-| 带括号签名 | `com.foo.UserService#getUser(Long)` | 忽略参数，method=`getUser` |
-| IDE 复制引用风格 | `com.foo.UserService.getUser(Long)` | 忽略参数，method=`getUser` |
-| 前后空格/换行 | `  com.foo.UserService#getUser  ` | trim 后解析 |
+从目标 `PsiMethod` 开始，递归或广度遍历其调用方方法：
 
-不建议第一版支持仅方法名 `getUser`，因为冲突概率高；如果后续需要，可以做“方法名宽搜”，并明确展示多个 service/path。
+1. 当前方法先尝试直接匹配缓存中的 API 入口方法；
+2. 再搜索“谁调用了当前方法”；
+3. 将调用方方法继续作为下一层节点向上搜索；
+4. 搜索过程中，如果某个调用方方法匹配到了缓存中的入口方法，则收集对应 API path；
+5. 达到最大层级后停止；
+6. 将所有命中的 API path 去重后展示。
 
-### 5.3 解析规则
+## 4.2 数据流示意
 
-新增一个小的解析方法即可，不需要过度抽象：
-
-1. `trim` 输入。
-2. 如果包含 `(`，截断到 `(` 之前。
-3. 优先按 `#` 分割。
-4. 否则按最后一个 `.` 分割。
-5. 校验：
-   - `serviceName` 非空。
-   - `methodName` 非空。
-   - `serviceName` 至少包含一个 `.`。
-6. 返回 `ClassIndexDTO(serviceName, methodName)` 或新增轻量 DTO。
-
-## 6. 服务层设计
-
-### 6.1 新增反向索引
-
-在 `SearchCacheManager` 中新增：
-
-```java
-private final static Map<String, List<ApiIndexDTO>> METHOD_INDEX_MAP = new ConcurrentHashMap<>();
+```text
+用户输入方法表达式
+    ↓
+解析为 serviceName + methodName (+ 可选参数信息)
+    ↓
+定位 PsiMethod
+    ↓
+先查直接绑定 API path
+    ↓
+按调用关系向上遍历 caller method
+    ↓
+遍历过程中用 caller 的 serviceName#methodName 匹配缓存入口方法
+    ↓
+汇总所有 API path
+    ↓
+结果展示 + 点击复制
 ```
 
-刷新缓存时同时重建两个索引：
+## 5. 上钻层级设计
 
-```java
-private void refreshClassIndex(List<ApiIndexDTO> list) {
-    CLASS_INDEX_MAP.clear();
-    METHOD_INDEX_MAP.clear();
+### 5.1 为什么需要层级上限
 
-    if (list == null || list.isEmpty()) {
-        return;
-    }
+调用链向上搜索如果没有边界，会有以下问题：
 
-    list.forEach(apiIndexDTO -> {
-        CLASS_INDEX_MAP.put(apiIndexDTO.getPath(), apiIndexDTO);
-        String methodKey = buildMethodKey(apiIndexDTO.getServiceName(), apiIndexDTO.getMethodName());
-        METHOD_INDEX_MAP.computeIfAbsent(methodKey, key -> new ArrayList<>()).add(apiIndexDTO);
-    });
-}
+1. 性能不可控：全项目 PSI 引用搜索成本较高；
+2. 结果噪音大：层级过深后容易引入工具类、通用封装、测试代码；
+3. 可能遇到环路或递归调用。
+
+因此必须增加上钻层级上限。
+
+### 5.2 层级建议值评估
+
+结合常见服务调用层次：
+
+```text
+API入口 -> Facade/ThriftService -> ApplicationService -> DomainService -> Manager -> Helper
 ```
 
-注意：如果继续使用 `ConcurrentHashMap`，`computeIfAbsent(...).add(...)` 在并发写入下不是完全安全。但 `refreshClassIndex` 当前是单线程重建索引，可以接受。若未来并发更新索引，再改成线程安全 List。
+典型项目里，从底层业务方法回溯到 API 入口，常见深度通常在 **2 ~ 5 层**。
 
-### 6.2 新增查询方法
+结论：
 
-推荐新增：
+- **默认值建议：5**
+- **配置范围建议：0 ~ 8**
+- **实现硬上限建议：10**
+
+说明：
+
+- `0`：只查当前方法直接绑定的接口，不做上钻；
+- `1 ~ 5`：满足大多数业务代码；
+- `6 ~ 8`：作为复杂链路兜底；
+- `> 8`：性能收益很小，噪音和耗时风险明显上升；
+- 硬上限 `10`：防止误输入导致极端深搜。
+
+因此，用户提出的“暂定 5”是合理的，建议作为默认值保留。
+
+## 6. 交互设计
+
+### 6.1 面板改造建议
+
+在现有“方法反查接口地址”区域补充两个控件：
+
+```text
+方法：          [com.xxx.Service#doSomething]
+上钻层级：      [5]
+[查询接口地址]
+结果：
+- /api/order/create
+  入口方法：com.foo.ApiOrderService#create
+  命中方式：上钻第 3 层
+```
+
+更具体建议：
+
+1. 保留当前 `METHOD_TEXT_FIELD`；
+2. 新增 `JSpinner` 或轻量输入框：
+   - 标签：`上钻层级：`
+   - 默认值：`5`
+   - 最小值：`0`
+   - 最大值：`8`
+3. 查询按钮保持一个即可，不额外拆两个按钮；
+4. 查询结果建议从纯 `String path` 升级为结果对象展示，至少包含：
+   - `path`
+   - `entryMethod`
+   - `depth`
+   - `matchType`（直接命中 / 上钻命中）
+
+### 6.2 结果展示建议
+
+第一版仍建议使用 `JList`，但展示模型从 `String` 升级为结果 DTO，例如：
 
 ```java
-public List<ApiIndexDTO> getApiIndexListByMethod(String serviceName, String methodName)
+ApiMethodSearchResultDTO
+```
+
+建议字段：
+
+- `String path`
+- `String entryServiceName`
+- `String entryMethodName`
+- `int depth`
+- `boolean directMatch`
+
+展示文案示例：
+
+```text
+/api/order/create
+入口方法：com.foo.ApiOrderService#createOrder
+命中方式：上钻第 2 层
+```
+
+点击任一结果：
+
+- 复制 `path` 到剪贴板；
+- 状态栏/提示文案更新为：`已复制接口地址：/api/order/create`
+
+## 7. 方法定位设计
+
+### 7.1 输入表达式兼容
+
+继续保留当前兼容格式：
+
+| 输入形式 | 示例 |
+| --- | --- |
+| `类全限定名#方法名` | `com.foo.UserService#getUser` |
+| `类全限定名.方法名` | `com.foo.UserService.getUser` |
+| 带括号签名 | `com.foo.UserService#getUser(Long)` |
+| 前后空格/换行 | `  com.foo.UserService#getUser  ` |
+
+### 7.2 重载方法处理
+
+由于“上钻”必须依赖真实 `PsiMethod`，重载问题需要比第一版更谨慎。
+
+建议策略：
+
+1. **如果输入带参数签名**：
+   - 尝试按方法名 + 参数个数 / 参数类型做精确匹配；
+2. **如果输入不带参数签名，且存在多个同名重载**：
+   - 合并查询所有同名 `PsiMethod`；
+   - 在结果提示中说明：`检测到方法重载，已合并查询结果`。
+
+这样既不阻断使用，也避免误只选中其中一个重载。
+
+## 8. 调用链分析设计
+
+### 8.1 搜索范围
+
+建议范围：
+
+- 仅限当前 `project`；
+- 仅限 Java 方法；
+- 跳过 library class、反编译依赖、测试代码（如项目现状允许再决定是否排除测试目录）。
+
+### 8.2 遍历方式
+
+建议采用 **BFS（广度优先）**：
+
+优点：
+
+1. 更容易记录“第几层命中”；
+2. 更容易控制最大层级；
+3. 当多个 API 入口都能到达目标方法时，先找到更近的入口。
+
+伪流程：
+
+```text
+queue <- 目标方法集合(depth=0)
+visited <- 空
+
+while queue 非空:
+    取出当前方法
+    如果已访问则跳过
+    标记已访问
+
+    用当前方法匹配缓存入口方法
+    若命中则收集 path
+
+    如果当前 depth >= maxDepth:
+        continue
+
+    查找当前方法的所有调用方方法
+    将调用方以 depth + 1 入队
+```
+
+### 8.3 去重与防环
+
+必须同时做两层去重：
+
+1. **方法节点去重**：避免环路、递归、重复遍历；
+2. **结果 path 去重**：避免同一个接口通过不同调用链重复命中。
+
+建议：
+
+- 方法去重 key：`qualifiedClassName#methodName(parameterCount)`；
+- 结果去重 key：`path`。
+
+## 9. 服务层设计调整
+
+### 9.1 SearchCacheManager 保持职责边界
+
+`SearchCacheManager` 继续负责：
+
+- 缓存读取；
+- path 索引；
+- method 索引；
+- 直接绑定 API 查询。
+
+不建议把 PSI 调用链搜索强塞进 `SearchCacheManager`，否则职责会混杂。
+
+### 9.2 新增调用链查询服务
+
+建议新增独立服务类，例如：
+
+```text
+src/main/java/com/augustlee/mt/toolWindow/mws/service/ApiMethodCallTraceService.java
 ```
 
 职责：
 
-- 参数判空。
-- 构建标准 key。
-- 返回匹配列表。
-- 无结果返回空 List，而不是 null，降低 UI 判断复杂度。
+1. 将方法表达式解析结果转换为 `PsiMethod`；
+2. 向上搜索调用链；
+3. 每一层结合 `SearchCacheManager` 做入口方法匹配；
+4. 输出结果 DTO 列表供面板层展示。
 
-## 7. 面板层设计
+这样可以保持：
 
-### 7.1 新增字段
+- `SearchCacheManager`：缓存索引；
+- `ApiMethodCallTraceService`：调用链分析；
+- `ApiCacheSearchPanel`：UI 与交互。
 
-在 `ApiCacheSearchPanel` 中新增：
+## 10. 面板层设计调整
 
-```java
-private final JLabel METHOD_LABEL = new JLabel("Method:");
-private final JTextField METHOD_TEXT_FIELD = new JTextField(30);
-private final JButton METHOD_SEARCH_BUTTON = new JButton("Query API Path");
-private final JLabel METHOD_RESULT_HINT_LABEL = new JLabel("Result:");
-private final DefaultListModel<String> METHOD_RESULT_LIST_MODEL = new DefaultListModel<>();
-private final JList<String> METHOD_RESULT_LIST = new JList<>(METHOD_RESULT_LIST_MODEL);
-```
+`ApiCacheSearchPanel` 需要补充：
 
-如果希望后续展示 service/method/path，可将 ListModel 改为 `ApiIndexDTO`，用 renderer 控制展示；第一版用 `String path` 最简洁。
+1. `上钻层级` 输入控件；
+2. 查询结果模型升级；
+3. 新的查询提示文案，例如：
+   - `共找到 4 个接口地址，其中 1 个直接命中，3 个来自上层调用链`
+4. 当输入层级非法时提示：
+   - `上钻层级必须在 0 ~ 8 之间`
 
-### 7.2 新增事件
+## 11. 异常与边界场景
 
-```java
-this.METHOD_SEARCH_BUTTON.addActionListener(this::searchApiPathByMethod);
-this.METHOD_RESULT_LIST.addMouseListener(... copy selected path ...);
-```
-
-`searchApiPathByMethod` 流程：
-
-1. 读取 `METHOD_TEXT_FIELD`。
-2. 校验缓存是否为空。
-3. 解析表达式为 `serviceName + methodName`。
-4. 调用 `SEARCH_CACHE_MANAGER.getApiIndexListByMethod(serviceName, methodName)`。
-5. 无结果：清空结果区并提示。
-6. 有结果：将每个 `ApiIndexDTO#getPath()` 放入结果 List。
-
-### 7.3 复制逻辑
-
-使用 AWT 剪贴板即可：
-
-```java
-Toolkit.getDefaultToolkit()
-        .getSystemClipboard()
-        .setContents(new StringSelection(path), null);
-```
-
-复制成功提示推荐更新 `METHOD_RESULT_HINT_LABEL`，例如：
-
-```text
-已复制: /api/xxx/path
-```
-
-## 8. 异常与边界场景
-
-| 场景 | 行为 |
+| 场景 | 处理建议 |
 | --- | --- |
-| 缓存为空 | 提示先点击 `Refresh` |
-| 输入为空 | 提示请输入方法全限定名 |
-| 表达式无法解析 | 提示支持格式：`类全限定名#方法名` 或 `类全限定名.方法名` |
-| 无匹配结果 | 结果区清空，提示未找到绑定的 API path |
-| 多个 API path | 全部展示，点击任一条复制 |
-| 同一 path 重复 | 展示前用 `LinkedHashSet` 去重并保持顺序 |
+| 缓存为空 | 提示先刷新缓存 |
+| 方法表达式非法 | 提示支持格式 |
+| 方法无法定位到源码 | 提示未找到对应 Java 方法 |
+| 存在同名重载 | 合并查询并提示 |
+| 上钻层级为 0 | 仅查询直接绑定接口 |
+| 上钻无命中 | 结果区清空并提示未找到可达接口 |
+| 调用链过大 | 达到层级上限即停止 |
+| 出现递归/环路 | 通过 visited 去重避免死循环 |
 
-## 9. 文件修改计划
+## 12. 文件修改建议
 
-预计只需要修改以下文件：
+预计下一阶段需要修改：
 
-1. `src/main/java/com/augustlee/mt/toolWindow/mws/service/SearchCacheManager.java`
-   - 增加 `METHOD_INDEX_MAP`。
-   - 增加方法 key 构建逻辑。
-   - `refreshClassIndex` 同时刷新 path 索引和 method 索引。
-   - 增加 `getApiIndexListByMethod(...)`。
+1. `src/main/java/com/augustlee/mt/toolWindow/mws/panel/ApiCacheSearchPanel.java`
+   - 增加上钻层级控件；
+   - 升级结果展示结构；
+   - 接入调用链查询服务。
 
-2. `src/main/java/com/augustlee/mt/toolWindow/mws/panel/ApiCacheSearchPanel.java`
-   - 增加 Method 输入区、查询按钮、结果展示区。
-   - 增加表达式解析私有方法。
-   - 增加查询和复制事件。
+2. `src/main/java/com/augustlee/mt/toolWindow/mws/service/SearchCacheManager.java`
+   - 保持现有 method 反查索引；
+   - 如有必要补充便捷查询方法，但不承担 PSI 搜索职责。
 
-不建议修改：
+3. `src/main/java/com/augustlee/mt/toolWindow/mws/service/ApiMethodCallTraceService.java`
+   - 新增，负责方法上钻分析。
 
-- `ApiIndexDTO`：现有字段已满足需求。
-- `ApiPathState`：持久化结构无需变更。
-- 网关 manager：无需新增接口请求。
+4. 如结果模型需要单独承载展示信息：
+   - `src/main/java/com/augustlee/mt/toolWindow/mws/dto/ApiMethodSearchResultDTO.java`
 
-## 10. JavaDoc 与编码要求
+## 13. 验收标准补充
 
-根据项目要求：
+除当前已完成能力外，新增验收项：
 
-- 新增 Java 方法需要补充 JavaDoc。
-- 如新增类或需要署名处，`@author` 使用 `August Lee`。
-- 文件编码使用 UTF-8（非 BOM）。
-- 仅做手术式修改，不顺手重构乱码注释或相邻代码。
+1. 查询一个底层方法时，若它被某 API 入口方法间接调用，则能展示该 API path；
+2. 多条上层调用链最终指向多个 API 入口时，能全部展示；
+3. 层级为 `0` 时，行为退化为当前“直接方法反查”；
+4. 层级为 `5` 时，常见业务链路可正常命中；
+5. 查询结果能区分直接命中与上钻命中；
+6. 点击结果仍然可复制 API path；
+7. Gradle 编译通过。
 
-## 11. 验收标准
+## 14. 风险与取舍
 
-1. 刷新缓存后，原有按 API path 跳转方法功能仍可用。
-2. 输入：
+### 14.1 性能风险
 
-   ```text
-   com.sankuai.sgb2b.seashop.mall.api.thrift.service.promotion.ApiFlashSaleQueryThriftService#mallPageList
-   ```
+PSI 调用链搜索明显重于单纯查缓存，因此必须限制：
 
-   能查询到对应 API path 并展示。
+1. 搜索范围；
+2. 上钻层级；
+3. 节点去重。
 
-3. 输入带参数签名也可识别：
+### 14.2 准确性风险
 
-   ```text
-   com.sankuai.sgb2b.seashop.mall.api.thrift.service.promotion.ApiFlashSaleQueryThriftService#mallPageList(Request)
-   ```
+以下情况可能导致结果偏宽：
 
-4. 输入 `类全限定名.方法名` 也可识别。
-5. 查询结果存在多条时全部展示。
-6. 点击结果可以复制 API path。
-7. 缓存为空、输入非法、无匹配时有明确提示。
-8. 插件可以通过 Gradle 编译。
+1. 方法重载；
+2. 多实现类；
+3. 通用工具类被大量调用；
+4. 同名方法但业务语义不同。
 
-## 12. 简要实现顺序
+因此第一版应优先保证“可用 + 可控”，不追求复杂静态分析完美精确。
 
-1. 在 `SearchCacheManager` 建立 method -> api list 反向索引。
-2. 在 `ApiCacheSearchPanel` 增加 UI 组件。
-3. 实现方法表达式解析。
-4. 实现查询结果展示。
-5. 实现点击复制。
-6. 编译验证。
+### 14.3 实现复杂度取舍
 
-## 13. 风险与取舍
+不建议第一版就做：
 
-- **方法重载风险**：缓存数据目前只有 `methodName`，没有参数签名；因此带参数输入仅用于剥离方法名，不能区分重载。当前网关绑定模型也是 `serviceName + methodName`，第一版保持一致。
-- **多 API 绑定同一方法**：用 `List<ApiIndexDTO>` 展示全部结果，不擅自选择其中一个。
-- **仅方法名搜索**：暂不支持，避免误匹配；如后续需要，可加一个“宽松搜索”入口。
-- **弹窗过多**：复制成功推荐用面板内状态 Label，不推荐每次复制都弹窗。
+1. 完整调用链路径可视化；
+2. 调用图树形展开；
+3. 跨模块跨语言调用；
+4. 自定义复杂过滤器。
+
+先把“给定底层方法，找出所有可能归属的 API 入口地址”做实用化即可。
