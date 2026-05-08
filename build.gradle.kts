@@ -49,7 +49,8 @@ tasks {
 
     patchPluginXml {
         sinceBuild.set("231")
-        untilBuild.set("253.*")
+        // 不设置兼容上限，允许 231 及以上版本继续安装；如需限制某个大版本，再显式设置 untilBuild
+        untilBuild.set("")
     }
 
     // 配置shadowJar任务

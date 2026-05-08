@@ -45,7 +45,7 @@
     <p>提升美团项目生态中的日常开发效率。</p>
   ]]></description>
 
-    <idea-version since-build="231" until-build="253.*"/>
+    <idea-version since-build="231"/>
 
     <!-- Product and plugin compatibility requirements.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
