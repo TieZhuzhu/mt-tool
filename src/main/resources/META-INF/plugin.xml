@@ -25,6 +25,7 @@
                 <li>支持沿方法调用链向上钻取，查询所有可达的 API path</li>
                 <li>支持点击反查结果直接复制 API path</li>
                 <li>支持 API 搜索自动补齐前导 /</li>
+                <li>支持在线获取 Shepherd API 分组，获取失败时自动回退本地枚举</li>
                 <li>支持自动获取 Cookie</li>
             </ul>
         </li>
