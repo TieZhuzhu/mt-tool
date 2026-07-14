@@ -5,12 +5,13 @@ import com.augustlee.mt.toolWindow.common.log.ConsoleLogger;
 import com.augustlee.mt.toolWindow.common.state.ApiPathState;
 import com.augustlee.mt.toolWindow.mws.dto.ApiIndexDTO;
 import com.augustlee.mt.toolWindow.mws.dto.ClassIndexDTO;
-import com.augustlee.mt.toolWindow.mws.enums.GroupEnum;
 import com.augustlee.mt.toolWindow.mws.manager.ApiDetailManager;
 import com.augustlee.mt.toolWindow.mws.manager.ApiManager;
+import com.augustlee.mt.toolWindow.mws.manager.GroupManager;
 import com.augustlee.mt.toolWindow.mws.po.ApiDetailPO;
 import com.augustlee.mt.toolWindow.mws.vo.ApiDetailVO;
 import com.augustlee.mt.toolWindow.mws.vo.ApiVO;
+import com.augustlee.mt.toolWindow.mws.vo.GroupVO;
 import com.intellij.openapi.application.ApplicationManager;
 
 import java.util.ArrayList;
@@ -49,6 +50,7 @@ public class SearchCacheManager {
     private final static Map<String, List<ApiIndexDTO>> METHOD_INDEX_MAP = new ConcurrentHashMap<>();
 
     private final ApiPathState apiPathState;
+    private final GroupManager groupManager = new GroupManager();
 
     /**
      * 使用 IntelliJ Platform 的线程池作为 Executor
@@ -124,15 +126,17 @@ public class SearchCacheManager {
     /**
      * 并行获取所有 Group 的 API 列表
      * 使用 CompletableFuture 实现更优雅的并行处理
+     *
+     * @param startTime 刷新开始时间
+     * @return 所有可用分组下的 API 列表
      */
     private List<ApiVO> fetchAllGroupApis(long startTime) {
-        LOG.info("第一步：开始并行获取所有 Group 的 API 列表，共 " + GroupEnum.values().length + " 个 Group");
-
-        GroupEnum[] groups = GroupEnum.values();
+        List<GroupVO> groups = this.groupManager.getAvailableGroups();
+        LOG.info("第一步：开始并行获取所有 Group 的 API 列表，共 " + groups.size() + " 个 Group");
 
         // 为每个 Group 创建异步任务
         List<CompletableFuture<List<ApiVO>>> futures = new ArrayList<>();
-        for (GroupEnum group : groups) {
+        for (GroupVO group : groups) {
             final int groupId = group.getId();
             CompletableFuture<List<ApiVO>> future = CompletableFuture.supplyAsync(() -> {
                 try {

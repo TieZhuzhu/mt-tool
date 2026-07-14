@@ -1,12 +1,13 @@
 package com.augustlee.mt.toolWindow.mws.service;
 
 import com.augustlee.mt.toolWindow.mws.dto.ClassIndexDTO;
-import com.augustlee.mt.toolWindow.mws.enums.GroupEnum;
 import com.augustlee.mt.toolWindow.mws.manager.ApiDetailManager;
 import com.augustlee.mt.toolWindow.mws.manager.ApiManager;
+import com.augustlee.mt.toolWindow.mws.manager.GroupManager;
 import com.augustlee.mt.toolWindow.mws.po.ApiDetailPO;
 import com.augustlee.mt.toolWindow.mws.vo.ApiDetailVO;
 import com.augustlee.mt.toolWindow.mws.vo.ApiVO;
+import com.augustlee.mt.toolWindow.mws.vo.GroupVO;
 
 import java.util.*;
 
@@ -22,14 +23,21 @@ public class SearchManager {
 
     private final Map<Integer, ApiManager> API_MANAGER_MAP = new HashMap<>();
     private final Map<ApiDetailPO, ApiDetailManager> API_DETAIL_MANAGER_MAP = new HashMap<>();
+    private final GroupManager groupManager = new GroupManager();
 
 
-
+    /**
+     * 根据 API 路径查询对应的 Java 类方法索引。
+     *
+     * @param path API 路径
+     * @return Java 类方法索引
+     * @throws RuntimeException 未找到匹配路径或调用信息时抛出
+     */
     public ClassIndexDTO getClassIndex(String path) {
-        List<GroupEnum> groupEnums = GroupEnum.getByCommonPrefix(path);
+        List<GroupVO> groups = this.groupManager.getByCommonPrefix(path);
 
-        Optional<ApiVO> optional = groupEnums.stream()
-                .map(GroupEnum::getId)
+        Optional<ApiVO> optional = groups.stream()
+                .map(GroupVO::getId)
                 .map(this::getApiManager)
                 .map(ApiManager::execute)
                 .flatMap(Collection::stream)
